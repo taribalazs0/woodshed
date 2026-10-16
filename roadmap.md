@@ -189,12 +189,12 @@ export interface CoachResponse {
 **Goal:** the project runs, the mic captures the raw guitar signal, and you can see it.
 
 - [ ] **0.0 OpenAI key (before the session, 10 min).** Create an OpenAI account, add credit, create an API key, and set a monthly budget limit. Billing can take a while, so do this tonight.
-- [ ] **0.1 Scaffold Next.js (20 min).** `create-next-app` refuses non-empty folders, so:
+- [x] **0.1 Scaffold Next.js (20 min).** `create-next-app` refuses non-empty folders, so:
   - scaffold into `_scaffold/` with TypeScript, App Router, Tailwind, ESLint and no `src` directory,
   - move everything into the root except its `README.md`, then delete `_scaffold/`,
   - merge `.gitignore`. Next's template ignores `.env*`, so add `!.env.example`.
   - *Test:* `npm run dev` serves the default page; T0.
-- [ ] **0.2 Dependencies (10 min).** `npm install tone meyda @ricky0123/vad-web openai`, and `npm install -D vitest`. *Test:* `npm run build` passes.
+- [x] **0.2 Dependencies (10 min).** `npm install tone meyda @ricky0123/vad-web openai`, and `npm install -D vitest`. *Test:* `npm run build` passes.
 - [ ] **0.3 Config (10 min).**
   - `.env.example` with `OPENAI_API_KEY=`.
   - [lib/config.ts](lib/config.ts) with a `getOpenAIKey()` that throws a readable error ("OPENAI_API_KEY is missing, see README") when the key isn't set.
@@ -286,6 +286,7 @@ export interface CoachResponse {
 - [ ] **4.5 Unit tests (15 min).** `tests/chords.test.ts` and `tests/report.test.ts` with synthetic inputs and the fixtures, plus an `npm test` script.
 - [ ] **4.6 Docs sync (15 min).** Update [README.md](README.md) to match the real code:
   - commands, environment variables and model overrides, and the project structure,
+  - the Node.js requirement: 22.12 or newer instead of 20.9, because Vitest 5 needs it,
   - only the voice commands that actually work. "Loop it" and "Stop" mid-take don't exist under the half-duplex design.
   - "tool calls" becomes "structured output".
   - Add the day's line to [ai.md](ai.md).
@@ -389,7 +390,7 @@ export interface CoachResponse {
 
 Record results here as `T<id>, <date>: pass or fail, numbers, notes`.
 
-- (empty)
+- T0, 2026-10-16: pass. `git check-ignore .env.local` prints the path, `git check-ignore .env.example` prints nothing.
 
 ## Risks and fallbacks
 

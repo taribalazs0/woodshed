@@ -1,12 +1,14 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
+import LevelMeter from "@/components/LevelMeter";
 import { getAudioContext, startAudio } from "@/lib/audio/context";
 import { getMicProcessing, openMic, type MicProcessing } from "@/lib/audio/mic";
 
 interface MicInfo {
   label: string;
   processing: MicProcessing;
+  source: MediaStreamAudioSourceNode;
 }
 
 const PROCESSING_ROWS: { key: keyof MicProcessing; label: string }[] = [
@@ -47,8 +49,8 @@ export default function Home() {
       const ctx = await startAudio();
       setSampleRate(ctx.sampleRate);
       setAudioState(ctx.state);
-      const { track } = await openMic(ctx);
-      setMic({ label: track.label, processing: getMicProcessing(track) });
+      const { track, source } = await openMic(ctx);
+      setMic({ label: track.label, processing: getMicProcessing(track), source });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -102,6 +104,8 @@ export default function Home() {
           </p>
         )}
       </section>
+
+      {mic && <LevelMeter source={mic.source} />}
     </main>
   );
 }

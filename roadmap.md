@@ -195,7 +195,7 @@ export interface CoachResponse {
   - merge `.gitignore`. Next's template ignores `.env*`, so add `!.env.example`.
   - *Test:* `npm run dev` serves the default page; T0.
 - [x] **0.2 Dependencies (10 min).** `npm install tone meyda @ricky0123/vad-web openai`, and `npm install -D vitest`. *Test:* `npm run build` passes.
-- [ ] **0.3 Config (10 min).**
+- [x] **0.3 Config (10 min).**
   - `.env.example` with `OPENAI_API_KEY=`.
   - [lib/config.ts](lib/config.ts) with a `getOpenAIKey()` that throws a readable error ("OPENAI_API_KEY is missing, see README") when the key isn't set.
 - [ ] **0.4 Audio context and Start button (20 min).** [lib/audio/context.ts](lib/audio/context.ts) creates the single native `AudioContext` and passes it to Tone.js. The Start button on [app/page.tsx](app/page.tsx) resumes it. *Test:* after the click, `ctx.state` is `running`.

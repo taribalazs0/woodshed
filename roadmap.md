@@ -198,7 +198,7 @@ export interface CoachResponse {
 - [x] **0.3 Config (10 min).**
   - `.env.example` with `OPENAI_API_KEY=`.
   - [lib/config.ts](lib/config.ts) with a `getOpenAIKey()` that throws a readable error ("OPENAI_API_KEY is missing, see README") when the key isn't set.
-- [ ] **0.4 Audio context and Start button (20 min).** [lib/audio/context.ts](lib/audio/context.ts) creates the single native `AudioContext` and passes it to Tone.js. The Start button on [app/page.tsx](app/page.tsx) resumes it. *Test:* after the click, `ctx.state` is `running`.
+- [x] **0.4 Audio context and Start button (20 min).** [lib/audio/context.ts](lib/audio/context.ts) creates the single native `AudioContext` and passes it to Tone.js. The Start button on [app/page.tsx](app/page.tsx) resumes it. *Test:* after the click, `ctx.state` is `running`.
 - [ ] **0.5 Raw microphone (15 min).** [lib/audio/mic.ts](lib/audio/mic.ts) calls `getUserMedia` with `echoCancellation`, `noiseSuppression` and `autoGainControl` all set to `false`. *Test:* T1a.
 - [ ] **0.6 Level meter (20 min).** [components/LevelMeter.tsx](components/LevelMeter.tsx) shows RMS, peak, a clipping warning and the measured noise floor. *Test:* T1b, T1c.
 - [ ] **0.7 Housekeeping (5 min).**

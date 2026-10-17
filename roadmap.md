@@ -200,7 +200,7 @@ export interface CoachResponse {
   - [lib/config.ts](lib/config.ts) with a `getOpenAIKey()` that throws a readable error ("OPENAI_API_KEY is missing, see README") when the key isn't set.
 - [x] **0.4 Audio context and Start button (20 min).** [lib/audio/context.ts](lib/audio/context.ts) creates the single native `AudioContext` and passes it to Tone.js. The Start button on [app/page.tsx](app/page.tsx) resumes it. *Test:* after the click, `ctx.state` is `running`.
 - [x] **0.5 Raw microphone (15 min).** [lib/audio/mic.ts](lib/audio/mic.ts) calls `getUserMedia` with `echoCancellation`, `noiseSuppression` and `autoGainControl` all set to `false`. *Test:* T1a.
-- [ ] **0.6 Level meter (20 min).** [components/LevelMeter.tsx](components/LevelMeter.tsx) shows RMS, peak, a clipping warning and the measured noise floor. *Test:* T1b, T1c.
+- [x] **0.6 Level meter (20 min).** [components/LevelMeter.tsx](components/LevelMeter.tsx) shows RMS, peak, a clipping warning and the measured noise floor. *Test:* T1b, T1c.
 - [x] **0.7 Housekeeping (5 min).**
   - Decide whether to commit `.cursor/rules/woodshed.mdc` (`ai.md` links to it).
   - Add the dev log line, tick this list.
@@ -211,7 +211,12 @@ export interface CoachResponse {
 
 **Goal:** an 8-bar take with a real guitar produces a correct JSON report. This is the riskiest milestone. If one session is worth extending, it is this one.
 
-- [ ] **1.1 Shared types (10 min).** [lib/types.ts](lib/types.ts) with the contracts above.
+**Change of plan (2026-10-17):** no guitar until Monday or Tuesday.
+- The demo guitar (4.1) moves into M1, right after the metronome (1.2). The analyzer is built and tested against a synthesized guitar that plays exactly on the click, with known, injected mistakes.
+- Step 1.8 and the T1b and T1c tests move to the first session with the guitar. The synthesized guitar sounds cleaner than a real acoustic one, so expect to retune the onset and chord thresholds then.
+- Budget: Sunday grows by about 20 minutes (35 for 4.1, minus 15 for 1.8).
+
+- [x] **1.1 Shared types (10 min).** [lib/types.ts](lib/types.ts) with the contracts above.
 - [ ] **1.2 Metronome (20 min).** [lib/audio/metronome.ts](lib/audio/metronome.ts):
   - an accented 4-click count-in, then 8 bars of clicks,
   - it returns the scheduled beat times in `AudioContext` seconds,
@@ -222,9 +227,9 @@ export interface CoachResponse {
 - [ ] **1.5 Chord matcher (15 min).** [lib/analysis/chords.ts](lib/analysis/chords.ts) builds triad templates for the supported chords and matches the 60-250 ms chroma window. *Test:* T4.
 - [ ] **1.6 Report builder (25 min).** [lib/analysis/report.ts](lib/analysis/report.ts) maps onsets to beats, removes the median latency, assigns a chord to each beat, finds late changes, and computes the summary and `topIssue`. *Test:* T3, T5.
 - [ ] **1.7 Report view (5 min).** Print the last report as JSON in a `<pre>` block.
-- [ ] **1.8 Real-guitar session (15 min).** Run T2-T5 and write the results into the test log. Save two real reports for the fixtures in step 2.2.
+- [ ] **1.8 Real-guitar session (15 min, moved to the first session with the guitar).** Run T2-T5 and write the results into the test log. Save two real reports for the fixtures in step 2.2.
 
-**Exit criteria:** T2-T5 pass, or the fallback from the risk list is in place. **Budget:** 120 minutes, no buffer.
+**Exit criteria:** T2-T5 pass, or the fallback from the risk list is in place. Under the change of plan, M1 exits when the demo guitar produces a correct report (T10), and T2-T5 follow with the real guitar. **Budget:** 120 minutes, no buffer.
 
 ## M2: The coach talks (Monday, October 19)
 
@@ -275,7 +280,7 @@ export interface CoachResponse {
 
 **Goal:** a reviewer without a guitar can see the full loop, and a fresh clone runs by following the README.
 
-- [ ] **4.1 Demo guitar (35 min).** [lib/audio/demoGuitar.ts](lib/audio/demoGuitar.ts):
+- [ ] **4.1 Demo guitar (35 min, moved to M1).** [lib/audio/demoGuitar.ts](lib/audio/demoGuitar.ts):
   - six `PluckSynth` voices, one per string. `PolySynth` doesn't accept `PluckSynth`.
   - real chord voicings, with a 12 ms strum spread,
   - two parameters: timing sloppiness (random offset of up to N ms) and late changes (strum the old chord on beat 1 of a new bar),
@@ -392,6 +397,7 @@ Record results here as `T<id>, <date>: pass or fail, numbers, notes`.
 
 - T0, 2026-10-16: pass. `git check-ignore .env.local` prints the path, `git check-ignore .env.example` prints nothing.
 - T1a, 2026-10-17: pass. In Chrome, `track.getSettings()` reports `echoCancellation`, `noiseSuppression` and `autoGainControl` as `false`.
+- T1b, T1c, 2026-10-17: pending with a real guitar until Monday or Tuesday. Proxy without a guitar: noise floor RMS 0.0005; a clap reached peak 2.778, max RMS 0.6026, ratio 1274.4x, and the clipping warning appeared. The meter works. A clap is a much peakier signal than a guitar strum, so T1b (peak under 0.95) is not judged from this. T1c's 10x ratio is already exceeded by a large margin against this noise floor.
 
 ## Risks and fallbacks
 

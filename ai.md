@@ -38,6 +38,7 @@ Timing and chord detection are deterministic signal processing: onset detection 
 ## Development log
 
 - **2026-10-16:** Ideation and scoping with the Cursor agent. Compared concepts across the tracks, picked the guitar coach for the Real-Time Assistance track, cut the scope to fit the deadline, chose the stack (Next.js, browser DSP, OpenAI), and drafted README.md and this file.
+- **2026-10-17:** M0, the app hears you. Built with the agent one micro-step at a time, each step tested and committed separately: the Next.js 16 scaffold, the dependencies, server-side config for the OpenAI key, one shared `AudioContext` handed to Tone.js, the raw microphone with the browser's voice processing turned off, and a level meter with peak, clipping and noise floor. Before wiring up Tone.js, the agent read its source and found that Tone takes over the context's `onstatechange`, so the app listens with `addEventListener` instead.
 
 ## Where I overruled the AI
 

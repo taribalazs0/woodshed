@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import LevelMeter from "@/components/LevelMeter";
+import { scoreChords, type ChordScore } from "@/lib/analysis/chords";
 import { createFeatureStream, type FeatureStream } from "@/lib/analysis/features";
 import { detectOnsets } from "@/lib/analysis/onsets";
 import { getAudioContext, startAudio } from "@/lib/audio/context";
@@ -14,7 +15,7 @@ import {
 } from "@/lib/audio/demoGuitar";
 import { scheduleTake, type ScheduledTake } from "@/lib/audio/metronome";
 import { getMicProcessing, openMic, type MicProcessing } from "@/lib/audio/mic";
-import { DEFAULT_EXERCISE } from "@/lib/types";
+import { DEFAULT_EXERCISE, type ChordName } from "@/lib/types";
 
 interface MicInfo {
   label: string;
@@ -49,6 +50,16 @@ function describeTake(take: ScheduledTake, now: number): string {
   return `Done. ${take.beatTimes.length} take beats at ${take.bpm} BPM.`;
 }
 
+function describeChordScore(score: ChordScore): string {
+  const lines = score.byChord.map((line) => `${line.chord} ${line.correct}/${line.total}`);
+  const extras = [
+    score.unclear > 0 ? `unclear ${score.unclear}` : "",
+    score.wrong > 0 ? `wrong ${score.wrong}` : "",
+    score.missed > 0 ? `missed ${score.missed}` : "",
+  ].filter(Boolean);
+  return `chords ${[...lines, ...extras].join(", ")}`;
+}
+
 function describeGuitar(plan: DemoStrum[]): string {
   const lateBars = plan.filter((strum) => strum.lateChange).map((strum) => strum.bar);
   if (lateBars.length === 0) return `${plan.length} strums, no late changes.`;
@@ -63,6 +74,7 @@ interface FeatureSummary {
   recording: boolean;
   onsets: number | null;
   expectedStrums: number;
+  chords: string | null;
 }
 
 export default function Home() {
@@ -144,7 +156,12 @@ export default function Home() {
     }
   }
 
-  function captureFeatures(source: AudioNode, label: string, scheduled: ScheduledTake) {
+  function captureFeatures(
+    source: AudioNode,
+    label: string,
+    scheduled: ScheduledTake,
+    expected?: { time: number; chord: ChordName }[],
+  ) {
     const stream = streamRef.current;
     if (!stream) throw new Error("Feature stream is not ready. Click Start again.");
     const from = scheduled.beatTimes[0];
@@ -158,6 +175,7 @@ export default function Home() {
       recording: true,
       onsets: null,
       expectedStrums,
+      chords: null,
     });
     void stream
       .record(source, from, until, (progress) => {
@@ -169,6 +187,7 @@ export default function Home() {
           recording: true,
           onsets: null,
           expectedStrums,
+          chords: null,
         });
       })
       .then((frames) => {
@@ -177,6 +196,7 @@ export default function Home() {
           : 0;
         const maxRms = frames.reduce((max, frame) => Math.max(max, frame.rms), 0);
         const onsets = detectOnsets(frames);
+        const chords = expected ? describeChordScore(scoreChords(frames, onsets, expected)) : null;
         setFeatures({
           source: label,
           frames: frames.length,
@@ -185,6 +205,7 @@ export default function Home() {
           recording: false,
           onsets: onsets.length,
           expectedStrums,
+          chords,
         });
       })
       .catch((err: unknown) => {
@@ -203,7 +224,12 @@ export default function Home() {
       });
       const guitar = await preloadDemoGuitar();
       await playDemoGuitar(plan);
-      captureFeatures(guitar.output, "demo guitar", scheduled);
+      captureFeatures(
+        guitar.output,
+        "demo guitar",
+        scheduled,
+        plan.map((strum) => ({ time: strum.time, chord: strum.played })),
+      );
       setGuitarPlan(plan);
       setTake(scheduled);
       setTakeNow(getAudioContext().currentTime);
@@ -349,7 +375,7 @@ export default function Home() {
         </h2>
         <p className="font-mono text-sm text-zinc-600 dark:text-zinc-400">
           {features
-            ? `${features.recording ? "Recording" : "Recorded"} ${features.source}: ${features.frames} frames, max RMS ${features.maxRms.toFixed(3)}${features.recording ? "" : `, mean RMS ${features.meanRms.toFixed(3)}, onsets ${features.onsets} (expected ${features.expectedStrums})`}`
+            ? `${features.recording ? "Recording" : "Recorded"} ${features.source}: ${features.frames} frames, max RMS ${features.maxRms.toFixed(3)}${features.recording ? "" : `, mean RMS ${features.meanRms.toFixed(3)}, onsets ${features.onsets} (expected ${features.expectedStrums})${features.chords ? `, ${features.chords}` : ""}`}`
             : "A take records RMS and chroma. Test take uses the microphone. Play demo guitar uses the synth."}
         </p>
       </section>

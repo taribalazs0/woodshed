@@ -188,7 +188,7 @@ export interface CoachResponse {
 
 **Goal:** the project runs, the mic captures the raw guitar signal, and you can see it.
 
-- [ ] **0.0 OpenAI key (before the session, 10 min).** Create an OpenAI account, add credit, create an API key, and set a monthly budget limit. Billing can take a while, so do this tonight.
+- [x] **0.0 OpenAI key (before the session, 10 min).** Create an OpenAI account, add credit, create an API key, and set a monthly budget limit. Billing can take a while, so do this tonight.
 - [x] **0.1 Scaffold Next.js (20 min).** `create-next-app` refuses non-empty folders, so:
   - scaffold into `_scaffold/` with TypeScript, App Router, Tailwind, ESLint and no `src` directory,
   - move everything into the root except its `README.md`, then delete `_scaffold/`,
@@ -217,7 +217,7 @@ export interface CoachResponse {
 - Budget: Sunday grows by about 20 minutes (35 for 4.1, minus 15 for 1.8).
 
 - [x] **1.1 Shared types (10 min).** [lib/types.ts](lib/types.ts) with the contracts above.
-- [ ] **1.2 Metronome (20 min).** [lib/audio/metronome.ts](lib/audio/metronome.ts):
+- [x] **1.2 Metronome (20 min).** [lib/audio/metronome.ts](lib/audio/metronome.ts):
   - an accented 4-click count-in, then 8 bars of clicks,
   - it returns the scheduled beat times in `AudioContext` seconds,
   - a temporary "Test take" button triggers it.

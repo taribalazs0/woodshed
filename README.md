@@ -113,6 +113,28 @@ flowchart LR
 
 The OpenAI API key stays on the server: the browser only talks to the local API routes.
 
+### Models
+
+These are the defaults. They were chosen for a judged voice demo, not for the cheapest possible bill. One practice turn (a short spoken command or a take report, plus the spoken reply) costs about one US cent, so a 10-minute session is roughly $0.10-0.25. A $10 credit covers development, the demo video, and reviewer runs with room to spare.
+
+| Job | Model | Why this one |
+|---|---|---|
+| Speech-to-text | `gpt-transcribe` | Accepts context and keyword hints, so chord names like "Em" and "Dm" and tempo numbers come through reliably. That accuracy is what makes voice commands work on the first try. |
+| Coach | `gpt-5.6-sol` with reasoning effort `none` | Strong enough to follow strict prompt rules (one tip, only numbers from the report) without inventing measurements. Reasoning is off so the spoken reply stays within a few seconds. The DSP already chose the issue; the model only has to phrase it well. |
+| Text-to-speech | `gpt-4o-mini-tts` with the `marin` voice | Takes a style instruction, so the coach sounds like a calm, encouraging teacher. OpenAI recommends `marin` or `cedar` for quality. |
+| Voice activity detection | Silero VAD, in the browser | Free and local, and keeps strumming away from the API. |
+
+A cheaper coach (`gpt-5.6-luna`) cuts that part of the bill by about 20 times, and the coaching gets somewhat less precise. That is the fallback if latency or credit becomes a problem, not the default for the demo.
+
+Each model can be overridden in `.env.local`:
+
+```bash
+OPENAI_TRANSCRIBE_MODEL=gpt-transcribe
+OPENAI_COACH_MODEL=gpt-5.6-sol
+OPENAI_TTS_MODEL=gpt-4o-mini-tts
+OPENAI_TTS_VOICE=marin
+```
+
 ## Troubleshooting
 
 - **No microphone input.** Chrome may have blocked the permission. Click the icon on the left side of the address bar, allow the microphone, and reload the page.

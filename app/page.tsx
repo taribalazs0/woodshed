@@ -3,7 +3,9 @@
 import { Fragment, useEffect, useState } from "react";
 import LevelMeter from "@/components/LevelMeter";
 import { getAudioContext, startAudio } from "@/lib/audio/context";
+import { scheduleTake, type ScheduledTake } from "@/lib/audio/metronome";
 import { getMicProcessing, openMic, type MicProcessing } from "@/lib/audio/mic";
+import { DEFAULT_EXERCISE } from "@/lib/types";
 
 interface MicInfo {
   label: string;
@@ -23,15 +25,34 @@ function describeProcessing(value: boolean | undefined): string {
   return "unknown";
 }
 
+function describeTake(take: ScheduledTake, now: number): string {
+  if (now < take.countInTimes[0]) return "Starting count-in...";
+  if (now < take.beatTimes[0]) {
+    const click = take.countInTimes.filter((time) => time <= now).length;
+    return `Count-in ${click}/${take.countInTimes.length}`;
+  }
+  if (now < take.endTime) {
+    const beat = take.beatTimes.filter((time) => time <= now).length;
+    const bar = Math.ceil(beat / take.beatsPerBar);
+    const beatInBar = ((beat - 1) % take.beatsPerBar) + 1;
+    return `Take bar ${bar} beat ${beatInBar} (${beat}/${take.beatTimes.length})`;
+  }
+  return `Done. ${take.beatTimes.length} take beats at ${take.bpm} BPM.`;
+}
+
 export default function Home() {
   const [audioState, setAudioState] = useState<AudioContextState | null>(null);
   const [sampleRate, setSampleRate] = useState<number | null>(null);
   const [mic, setMic] = useState<MicInfo | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [take, setTake] = useState<ScheduledTake | null>(null);
+  const [takeNow, setTakeNow] = useState(0);
+  const [takeStarting, setTakeStarting] = useState(false);
 
   const started = sampleRate !== null;
   const ready = audioState === "running" && mic !== null;
+  const takeActive = take !== null && takeNow < take.endTime;
 
   useEffect(() => {
     if (!started) return;
@@ -41,6 +62,19 @@ export default function Home() {
     ctx.addEventListener("statechange", update);
     return () => ctx.removeEventListener("statechange", update);
   }, [started]);
+
+  useEffect(() => {
+    if (!take) return;
+    const ctx = getAudioContext();
+    let frame = 0;
+    const tick = () => {
+      const now = ctx.currentTime;
+      setTakeNow(now);
+      if (now < take.endTime) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [take]);
 
   async function handleStart() {
     setStarting(true);
@@ -55,6 +89,20 @@ export default function Home() {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setStarting(false);
+    }
+  }
+
+  async function handleTestTake() {
+    setTakeStarting(true);
+    setError(null);
+    try {
+      const scheduled = await scheduleTake(DEFAULT_EXERCISE);
+      setTake(scheduled);
+      setTakeNow(getAudioContext().currentTime);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setTakeStarting(false);
     }
   }
 
@@ -106,6 +154,35 @@ export default function Home() {
       </section>
 
       {mic && <LevelMeter source={mic.source} />}
+
+      <section className="flex flex-col items-start gap-3">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
+          Metronome
+        </h2>
+        <button
+          type="button"
+          onClick={handleTestTake}
+          disabled={!ready || takeStarting || takeActive}
+          className="h-9 rounded-full border border-zinc-300 px-4 text-sm transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+        >
+          {takeStarting ? "Scheduling..." : "Test take"}
+        </button>
+        <p className="font-mono text-sm text-zinc-600 dark:text-zinc-400">
+          {take
+            ? describeTake(take, takeNow)
+            : `Idle. ${DEFAULT_EXERCISE.bars} bars at ${DEFAULT_EXERCISE.bpm} BPM after a 4-click count-in.`}
+        </p>
+        {take && (
+          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 font-mono text-sm">
+            <dt className="text-zinc-500">First take beat</dt>
+            <dd>{take.beatTimes[0]?.toFixed(3)} s</dd>
+            <dt className="text-zinc-500">Last take beat</dt>
+            <dd>{take.beatTimes[take.beatTimes.length - 1]?.toFixed(3)} s</dd>
+            <dt className="text-zinc-500">Take end</dt>
+            <dd>{take.endTime.toFixed(3)} s</dd>
+          </dl>
+        )}
+      </section>
     </main>
   );
 }

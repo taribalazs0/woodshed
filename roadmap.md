@@ -222,7 +222,7 @@ export interface CoachResponse {
   - it returns the scheduled beat times in `AudioContext` seconds,
   - a temporary "Test take" button triggers it.
   - *Test:* the clicks are steady and stop after 8 bars.
-- [ ] **1.3 Feature stream (15 min).** [lib/analysis/features.ts](lib/analysis/features.ts) runs a Meyda analyzer (buffer size 512, `rms` and `chroma`) on the mic source and emits timestamped frames during a take.
+- [x] **1.3 Feature stream (15 min).** [lib/analysis/features.ts](lib/analysis/features.ts) runs a Meyda analyzer (buffer size 512, `rms` and `chroma`) on the mic source and emits timestamped frames during a take.
 - [ ] **1.4 Onset detector (15 min).** [lib/analysis/onsets.ts](lib/analysis/onsets.ts) uses an adaptive threshold on the RMS rise and a 120 ms refractory period. *Test:* T2.
 - [ ] **1.5 Chord matcher (15 min).** [lib/analysis/chords.ts](lib/analysis/chords.ts) builds triad templates for the supported chords and matches the 60-250 ms chroma window. *Test:* T4.
 - [ ] **1.6 Report builder (25 min).** [lib/analysis/report.ts](lib/analysis/report.ts) maps onsets to beats, removes the median latency, assigns a chord to each beat, finds late changes, and computes the summary and `topIssue`. *Test:* T3, T5.

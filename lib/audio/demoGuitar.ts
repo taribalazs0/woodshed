@@ -50,14 +50,23 @@ export interface DemoGuitar {
   output: GainNode;
 }
 
-let guitarPromise: Promise<DemoGuitar & { strings: PluckSynth[] }> | null = null;
+interface StringVoice {
+  triggerAttack(note: string, time?: number): void;
+}
+
+let guitarPromise: Promise<DemoGuitar & { strings: StringVoice[] }> | null = null;
 
 /** Creates the six string voices once, on the shared AudioContext. */
 export function getDemoGuitar(): Promise<DemoGuitar> {
   return loadDemoGuitar();
 }
 
-function loadDemoGuitar(): Promise<DemoGuitar & { strings: PluckSynth[] }> {
+/** Builds the guitar before Meyda starts, so the first take is not silent. */
+export function preloadDemoGuitar(): Promise<DemoGuitar> {
+  return loadDemoGuitar();
+}
+
+function loadDemoGuitar(): Promise<DemoGuitar & { strings: StringVoice[] }> {
   guitarPromise ??= createDemoGuitar().catch((err: unknown) => {
     guitarPromise = null;
     throw err;
@@ -99,7 +108,6 @@ export function planDemoStrums(
 /** Schedules a down-strum per take beat. Clicks stay on the metronome, not on this bus. */
 export async function playDemoGuitar(plan: DemoStrum[]): Promise<void> {
   const guitar = await loadDemoGuitar();
-  await whenStringModelsReady(guitar.strings);
   for (const strum of plan) {
     const notes = VOICINGS[strum.played];
     let sounding = 0;
@@ -119,13 +127,24 @@ export async function playDemoGuitar(plan: DemoStrum[]): Promise<void> {
  * That load is async, so notes scheduled before it are dropped.
  */
 async function whenStringModelsReady(strings: PluckSynth[]): Promise<void> {
+  const toneContext = strings[0]?.context as { _workletPromise?: Promise<unknown> } | undefined;
+  const failed = toneContext?._workletPromise?.then(
+    () => null,
+    (err: unknown) => (err instanceof Error ? err.message : String(err)),
+  );
   const deadline = performance.now() + 2000;
   while (performance.now() < deadline) {
     if (strings.every((string) => stringModelReady(string))) return;
-    await new Promise((resolve) => setTimeout(resolve, 40));
+    const reason = await Promise.race([
+      failed ?? Promise.resolve(null),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 40)),
+    ]);
+    if (typeof reason === "string") {
+      throw new Error(`Demo guitar string model failed to load: ${reason}`);
+    }
   }
   throw new Error(
-    "Demo guitar could not start its string model. Reload the page and press Play demo guitar again.",
+    "Demo guitar could not start its string model. Reload the page and press Start again.",
   );
 }
 
@@ -161,10 +180,14 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-async function createDemoGuitar(): Promise<DemoGuitar & { strings: PluckSynth[] }> {
+async function createDemoGuitar(): Promise<DemoGuitar & { strings: StringVoice[] }> {
   const ctx = getAudioContext();
   const Tone = await import("tone");
-  if (Tone.getContext().rawContext !== ctx) {
+  const toneContext = Tone.getContext() as unknown as {
+    rawContext: AudioContext;
+    _workletPromise?: Promise<void>;
+  };
+  if (toneContext.rawContext !== ctx) {
     throw new Error("Tone.js is not using the shared AudioContext.");
   }
 
@@ -172,16 +195,73 @@ async function createDemoGuitar(): Promise<DemoGuitar & { strings: PluckSynth[] 
   output.gain.value = 1;
   output.connect(ctx.destination);
 
-  const strings = Array.from({ length: 6 }, () => {
-    const string = new Tone.PluckSynth({
-      attackNoise: 3,
-      dampening: 5000,
-      resonance: 0.92,
-      volume: -4,
+  const plucked = await tryPluckStrings(Tone, toneContext, ctx, output);
+  return { output, strings: plucked ?? createOscillatorStrings(Tone, output) };
+}
+
+async function tryPluckStrings(
+  Tone: typeof import("tone"),
+  toneContext: { _workletPromise?: Promise<void> },
+  ctx: AudioContext,
+  output: GainNode,
+): Promise<PluckSynth[] | null> {
+  let strings: PluckSynth[] = [];
+  try {
+    toneContext._workletPromise ??= withTimeout(
+      ctx.audioWorklet.addModule("/guitar-worklet.js"),
+      1500,
+      "Guitar worklet did not load.",
+    );
+    await toneContext._workletPromise;
+    strings = Array.from({ length: 6 }, () => {
+      const string = new Tone.PluckSynth({
+        attackNoise: 3,
+        dampening: 5000,
+        resonance: 0.92,
+        volume: -4,
+      });
+      string.connect(output);
+      return string;
+    });
+    await whenStringModelsReady(strings);
+    return strings;
+  } catch {
+    strings.forEach((string) => string.dispose());
+    return null;
+  }
+}
+
+function createOscillatorStrings(
+  Tone: typeof import("tone"),
+  output: GainNode,
+): StringVoice[] {
+  return Array.from({ length: 6 }, () => {
+    const string = new Tone.Synth({
+      oscillator: { type: "triangle" },
+      envelope: { attack: 0.001, decay: 0.45, sustain: 0, release: 0.2 },
+      volume: -8,
     });
     string.connect(output);
-    return string;
+    return {
+      triggerAttack(note, time) {
+        string.triggerAttackRelease(note, 0.35, time);
+      },
+    };
   });
+}
 
-  return { output, strings };
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err: unknown) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
 }

@@ -1,12 +1,14 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import LevelMeter from "@/components/LevelMeter";
+import { createFeatureStream, type FeatureStream } from "@/lib/analysis/features";
 import { getAudioContext, startAudio } from "@/lib/audio/context";
 import {
   MAX_SLOPPINESS_MS,
   planDemoStrums,
   playDemoGuitar,
+  preloadDemoGuitar,
   type DemoStrum,
 } from "@/lib/audio/demoGuitar";
 import { scheduleTake, type ScheduledTake } from "@/lib/audio/metronome";
@@ -52,6 +54,14 @@ function describeGuitar(plan: DemoStrum[]): string {
   return `${plan.length} strums, late changes on bars ${lateBars.join(", ")}.`;
 }
 
+interface FeatureSummary {
+  source: string;
+  frames: number;
+  maxRms: number;
+  meanRms: number;
+  recording: boolean;
+}
+
 export default function Home() {
   const [audioState, setAudioState] = useState<AudioContextState | null>(null);
   const [sampleRate, setSampleRate] = useState<number | null>(null);
@@ -64,6 +74,9 @@ export default function Home() {
   const [sloppinessMs, setSloppinessMs] = useState(0);
   const [lateChangePercent, setLateChangePercent] = useState(0);
   const [guitarPlan, setGuitarPlan] = useState<DemoStrum[] | null>(null);
+  const [features, setFeatures] = useState<FeatureSummary | null>(null);
+  const streamRef = useRef<FeatureStream | null>(null);
+  const micSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
 
   const started = sampleRate !== null;
   const ready = audioState === "running" && mic !== null;
@@ -99,6 +112,9 @@ export default function Home() {
       setSampleRate(ctx.sampleRate);
       setAudioState(ctx.state);
       const { track, source } = await openMic(ctx);
+      await preloadDemoGuitar();
+      micSourceRef.current = source;
+      streamRef.current = createFeatureStream(ctx, source);
       setMic({ label: track.label, processing: getMicProcessing(track), source });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -113,6 +129,9 @@ export default function Home() {
     setGuitarPlan(null);
     try {
       const scheduled = await scheduleTake(DEFAULT_EXERCISE);
+      const source = micSourceRef.current;
+      if (!source) throw new Error("Microphone is not open.");
+      captureFeatures(source, "microphone", scheduled);
       setTake(scheduled);
       setTakeNow(getAudioContext().currentTime);
     } catch (err) {
@@ -120,6 +139,40 @@ export default function Home() {
     } finally {
       setTakeStarting(false);
     }
+  }
+
+  function captureFeatures(source: AudioNode, label: string, scheduled: ScheduledTake) {
+    const stream = streamRef.current;
+    if (!stream) throw new Error("Feature stream is not ready. Click Start again.");
+    const from = scheduled.beatTimes[0];
+    const until = scheduled.endTime;
+    setFeatures({ source: label, frames: 0, maxRms: 0, meanRms: 0, recording: true });
+    void stream
+      .record(source, from, until, (progress) => {
+        setFeatures({
+          source: label,
+          frames: progress.frames,
+          maxRms: progress.maxRms,
+          meanRms: 0,
+          recording: true,
+        });
+      })
+      .then((frames) => {
+        const meanRms = frames.length
+          ? frames.reduce((sum, frame) => sum + frame.rms, 0) / frames.length
+          : 0;
+        const maxRms = frames.reduce((max, frame) => Math.max(max, frame.rms), 0);
+        setFeatures({
+          source: label,
+          frames: frames.length,
+          maxRms,
+          meanRms,
+          recording: false,
+        });
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : String(err));
+      });
   }
 
   async function handleDemoGuitar() {
@@ -131,7 +184,9 @@ export default function Home() {
         sloppinessMs,
         lateChangeAmount: lateChangePercent / 100,
       });
+      const guitar = await preloadDemoGuitar();
       await playDemoGuitar(plan);
+      captureFeatures(guitar.output, "demo guitar", scheduled);
       setGuitarPlan(plan);
       setTake(scheduled);
       setTakeNow(getAudioContext().currentTime);
@@ -269,6 +324,17 @@ export default function Home() {
             {describeGuitar(guitarPlan)}
           </p>
         )}
+      </section>
+
+      <section className="flex flex-col items-start gap-2">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
+          Features
+        </h2>
+        <p className="font-mono text-sm text-zinc-600 dark:text-zinc-400">
+          {features
+            ? `${features.recording ? "Recording" : "Recorded"} ${features.source}: ${features.frames} frames, max RMS ${features.maxRms.toFixed(3)}${features.recording ? "" : `, mean RMS ${features.meanRms.toFixed(3)}`}`
+            : "A take records RMS and chroma. Test take uses the microphone. Play demo guitar uses the synth."}
+        </p>
       </section>
     </main>
   );

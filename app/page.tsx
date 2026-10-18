@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import LevelMeter from "@/components/LevelMeter";
 import { createFeatureStream, type FeatureStream } from "@/lib/analysis/features";
+import { detectOnsets } from "@/lib/analysis/onsets";
 import { getAudioContext, startAudio } from "@/lib/audio/context";
 import {
   MAX_SLOPPINESS_MS,
@@ -60,6 +61,8 @@ interface FeatureSummary {
   maxRms: number;
   meanRms: number;
   recording: boolean;
+  onsets: number | null;
+  expectedStrums: number;
 }
 
 export default function Home() {
@@ -146,7 +149,16 @@ export default function Home() {
     if (!stream) throw new Error("Feature stream is not ready. Click Start again.");
     const from = scheduled.beatTimes[0];
     const until = scheduled.endTime;
-    setFeatures({ source: label, frames: 0, maxRms: 0, meanRms: 0, recording: true });
+    const expectedStrums = scheduled.bars * scheduled.beatsPerBar;
+    setFeatures({
+      source: label,
+      frames: 0,
+      maxRms: 0,
+      meanRms: 0,
+      recording: true,
+      onsets: null,
+      expectedStrums,
+    });
     void stream
       .record(source, from, until, (progress) => {
         setFeatures({
@@ -155,6 +167,8 @@ export default function Home() {
           maxRms: progress.maxRms,
           meanRms: 0,
           recording: true,
+          onsets: null,
+          expectedStrums,
         });
       })
       .then((frames) => {
@@ -162,12 +176,15 @@ export default function Home() {
           ? frames.reduce((sum, frame) => sum + frame.rms, 0) / frames.length
           : 0;
         const maxRms = frames.reduce((max, frame) => Math.max(max, frame.rms), 0);
+        const onsets = detectOnsets(frames);
         setFeatures({
           source: label,
           frames: frames.length,
           maxRms,
           meanRms,
           recording: false,
+          onsets: onsets.length,
+          expectedStrums,
         });
       })
       .catch((err: unknown) => {
@@ -332,7 +349,7 @@ export default function Home() {
         </h2>
         <p className="font-mono text-sm text-zinc-600 dark:text-zinc-400">
           {features
-            ? `${features.recording ? "Recording" : "Recorded"} ${features.source}: ${features.frames} frames, max RMS ${features.maxRms.toFixed(3)}${features.recording ? "" : `, mean RMS ${features.meanRms.toFixed(3)}`}`
+            ? `${features.recording ? "Recording" : "Recorded"} ${features.source}: ${features.frames} frames, max RMS ${features.maxRms.toFixed(3)}${features.recording ? "" : `, mean RMS ${features.meanRms.toFixed(3)}, onsets ${features.onsets} (expected ${features.expectedStrums})`}`
             : "A take records RMS and chroma. Test take uses the microphone. Play demo guitar uses the synth."}
         </p>
       </section>

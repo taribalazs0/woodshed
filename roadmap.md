@@ -280,7 +280,7 @@ export interface CoachResponse {
 
 **Goal:** a reviewer without a guitar can see the full loop, and a fresh clone runs by following the README.
 
-- [ ] **4.1 Demo guitar (35 min, moved to M1).** [lib/audio/demoGuitar.ts](lib/audio/demoGuitar.ts):
+- [x] **4.1 Demo guitar (35 min, moved to M1).** [lib/audio/demoGuitar.ts](lib/audio/demoGuitar.ts):
   - six `PluckSynth` voices, one per string. `PolySynth` doesn't accept `PluckSynth`.
   - real chord voicings, with a 12 ms strum spread,
   - two parameters: timing sloppiness (random offset of up to N ms) and late changes (strum the old chord on beat 1 of a new bar),

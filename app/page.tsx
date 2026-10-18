@@ -3,6 +3,12 @@
 import { Fragment, useEffect, useState } from "react";
 import LevelMeter from "@/components/LevelMeter";
 import { getAudioContext, startAudio } from "@/lib/audio/context";
+import {
+  MAX_SLOPPINESS_MS,
+  planDemoStrums,
+  playDemoGuitar,
+  type DemoStrum,
+} from "@/lib/audio/demoGuitar";
 import { scheduleTake, type ScheduledTake } from "@/lib/audio/metronome";
 import { getMicProcessing, openMic, type MicProcessing } from "@/lib/audio/mic";
 import { DEFAULT_EXERCISE } from "@/lib/types";
@@ -40,6 +46,12 @@ function describeTake(take: ScheduledTake, now: number): string {
   return `Done. ${take.beatTimes.length} take beats at ${take.bpm} BPM.`;
 }
 
+function describeGuitar(plan: DemoStrum[]): string {
+  const lateBars = plan.filter((strum) => strum.lateChange).map((strum) => strum.bar);
+  if (lateBars.length === 0) return `${plan.length} strums, no late changes.`;
+  return `${plan.length} strums, late changes on bars ${lateBars.join(", ")}.`;
+}
+
 export default function Home() {
   const [audioState, setAudioState] = useState<AudioContextState | null>(null);
   const [sampleRate, setSampleRate] = useState<number | null>(null);
@@ -49,6 +61,9 @@ export default function Home() {
   const [take, setTake] = useState<ScheduledTake | null>(null);
   const [takeNow, setTakeNow] = useState(0);
   const [takeStarting, setTakeStarting] = useState(false);
+  const [sloppinessMs, setSloppinessMs] = useState(0);
+  const [lateChangePercent, setLateChangePercent] = useState(0);
+  const [guitarPlan, setGuitarPlan] = useState<DemoStrum[] | null>(null);
 
   const started = sampleRate !== null;
   const ready = audioState === "running" && mic !== null;
@@ -95,8 +110,29 @@ export default function Home() {
   async function handleTestTake() {
     setTakeStarting(true);
     setError(null);
+    setGuitarPlan(null);
     try {
       const scheduled = await scheduleTake(DEFAULT_EXERCISE);
+      setTake(scheduled);
+      setTakeNow(getAudioContext().currentTime);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setTakeStarting(false);
+    }
+  }
+
+  async function handleDemoGuitar() {
+    setTakeStarting(true);
+    setError(null);
+    try {
+      const scheduled = await scheduleTake(DEFAULT_EXERCISE);
+      const plan = planDemoStrums(scheduled, DEFAULT_EXERCISE, {
+        sloppinessMs,
+        lateChangeAmount: lateChangePercent / 100,
+      });
+      await playDemoGuitar(plan);
+      setGuitarPlan(plan);
       setTake(scheduled);
       setTakeNow(getAudioContext().currentTime);
     } catch (err) {
@@ -181,6 +217,57 @@ export default function Home() {
             <dt className="text-zinc-500">Take end</dt>
             <dd>{take.endTime.toFixed(3)} s</dd>
           </dl>
+        )}
+      </section>
+
+      <section className="flex w-full flex-col items-start gap-4">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
+          Demo guitar
+        </h2>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          Plays {DEFAULT_EXERCISE.chords.join(" to ")} with the click. The sliders move into the
+          demo panel later.
+        </p>
+        <label className="flex w-full max-w-sm flex-col gap-1 text-sm">
+          <span className="flex justify-between font-mono text-zinc-500">
+            <span>Timing sloppiness</span>
+            <span>{sloppinessMs} ms</span>
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={MAX_SLOPPINESS_MS}
+            step={5}
+            value={sloppinessMs}
+            onChange={(event) => setSloppinessMs(Number(event.target.value))}
+          />
+        </label>
+        <label className="flex w-full max-w-sm flex-col gap-1 text-sm">
+          <span className="flex justify-between font-mono text-zinc-500">
+            <span>Late chord changes</span>
+            <span>{lateChangePercent}%</span>
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={lateChangePercent}
+            onChange={(event) => setLateChangePercent(Number(event.target.value))}
+          />
+        </label>
+        <button
+          type="button"
+          onClick={handleDemoGuitar}
+          disabled={!ready || takeStarting || takeActive}
+          className="h-9 rounded-full border border-zinc-300 px-4 text-sm transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+        >
+          {takeStarting ? "Scheduling..." : "Play demo guitar"}
+        </button>
+        {guitarPlan && (
+          <p className="font-mono text-sm text-zinc-600 dark:text-zinc-400">
+            {describeGuitar(guitarPlan)}
+          </p>
         )}
       </section>
     </main>

@@ -225,7 +225,7 @@ export interface CoachResponse {
 - [x] **1.3 Feature stream (15 min).** [lib/analysis/features.ts](lib/analysis/features.ts) runs a Meyda analyzer (buffer size 512, `rms` and `chroma`) on the mic source and emits timestamped frames during a take.
 - [x] **1.4 Onset detector (15 min).** [lib/analysis/onsets.ts](lib/analysis/onsets.ts) uses an adaptive threshold on the RMS rise and a 120 ms refractory period. *Test:* T2.
 - [x] **1.5 Chord matcher (15 min).** [lib/analysis/chords.ts](lib/analysis/chords.ts) builds triad templates for the supported chords and matches the 60-250 ms chroma window. *Test:* T4.
-- [ ] **1.6 Report builder (25 min).** [lib/analysis/report.ts](lib/analysis/report.ts) maps onsets to beats, removes the median latency, assigns a chord to each beat, finds late changes, and computes the summary and `topIssue`. *Test:* T3, T5.
+- [x] **1.6 Report builder (25 min).** [lib/analysis/report.ts](lib/analysis/report.ts) maps onsets to beats, removes the median latency, assigns a chord to each beat, finds late changes, and computes the summary and `topIssue`. *Test:* T3, T5.
 - [ ] **1.7 Report view (5 min).** Print the last report as JSON in a `<pre>` block.
 - [ ] **1.8 Real-guitar session (15 min, moved to the first session with the guitar).** Run T2-T5 and write the results into the test log. Save two real reports for the fixtures in step 2.2.
 
@@ -398,6 +398,7 @@ Record results here as `T<id>, <date>: pass or fail, numbers, notes`.
 - T0, 2026-10-16: pass. `git check-ignore .env.local` prints the path, `git check-ignore .env.example` prints nothing.
 - T1a, 2026-10-17: pass. In Chrome, `track.getSettings()` reports `echoCancellation`, `noiseSuppression` and `autoGainControl` as `false`.
 - T1b, T1c, 2026-10-17: pending with a real guitar until Monday or Tuesday. Proxy without a guitar: noise floor RMS 0.0005; a clap reached peak 2.778, max RMS 0.6026, ratio 1274.4x, and the clipping warning appeared. The meter works. A clap is a much peakier signal than a guitar strum, so T1b (peak under 0.95) is not judged from this. T1c's 10x ratio is already exceeded by a large margin against this noise floor.
+- T3, T5, 2026-10-19: pass on synthetic inputs (`npx vitest run tests/report.test.ts`, 6 tests). Onsets on the beat give 0 ms offset; a constant 80 ms latency is removed; a missed window is `missed`; an old chord on a change downbeat is a late change; `topIssue` follows the ranking. Real-guitar T3/T5 stay with step 1.8.
 
 ## Risks and fallbacks
 

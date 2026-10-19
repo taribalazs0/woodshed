@@ -237,7 +237,7 @@ export interface CoachResponse {
 
 - [x] **2.1 Models (10 min).** Check the OpenAI docs for the current fast models for transcription, chat with structured outputs, and TTS. Put the defaults into [lib/config.ts](lib/config.ts), with optional environment-variable overrides.
 - [x] **2.2 Fixtures (10 min).** Create `fixtures/reports/clean.json`, `late-changes.json` and `rushing.json`, reusing the real reports from 1.8 where possible.
-- [ ] **2.3 Coach route (30 min).** [app/api/coach/route.ts](app/api/coach/route.ts):
+- [x] **2.3 Coach route (30 min).** [app/api/coach/route.ts](app/api/coach/route.ts):
   - **System prompt rules:**
     - you are a friendly, direct guitar teacher,
     - at most 2 sentences and about 30 words,

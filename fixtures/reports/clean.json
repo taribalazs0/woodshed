@@ -1,0 +1,250 @@
+{
+  "exercise": {
+    "chords": [
+      "C",
+      "G"
+    ],
+    "bpm": 70,
+    "bars": 8,
+    "beatsPerBar": 4
+  },
+  "strums": [
+    {
+      "bar": 1,
+      "beat": 1,
+      "expected": "C",
+      "heard": "C",
+      "offsetMs": 0
+    },
+    {
+      "bar": 1,
+      "beat": 2,
+      "expected": "C",
+      "heard": "C",
+      "offsetMs": 0
+    },
+    {
+      "bar": 1,
+      "beat": 3,
+      "expected": "C",
+      "heard": "C",
+      "offsetMs": 0
+    },
+    {
+      "bar": 1,
+      "beat": 4,
+      "expected": "C",
+      "heard": "C",
+      "offsetMs": 0
+    },
+    {
+      "bar": 2,
+      "beat": 1,
+      "expected": "G",
+      "heard": "G",
+      "offsetMs": 0
+    },
+    {
+      "bar": 2,
+      "beat": 2,
+      "expected": "G",
+      "heard": "G",
+      "offsetMs": 0
+    },
+    {
+      "bar": 2,
+      "beat": 3,
+      "expected": "G",
+      "heard": "G",
+      "offsetMs": 0
+    },
+    {
+      "bar": 2,
+      "beat": 4,
+      "expected": "G",
+      "heard": "G",
+      "offsetMs": 0
+    },
+    {
+      "bar": 3,
+      "beat": 1,
+      "expected": "C",
+      "heard": "C",
+      "offsetMs": 0
+    },
+    {
+      "bar": 3,
+      "beat": 2,
+      "expected": "C",
+      "heard": "C",
+      "offsetMs": 0
+    },
+    {
+      "bar": 3,
+      "beat": 3,
+      "expected": "C",
+      "heard": "C",
+      "offsetMs": 0
+    },
+    {
+      "bar": 3,
+      "beat": 4,
+      "expected": "C",
+      "heard": "C",
+      "offsetMs": 0
+    },
+    {
+      "bar": 4,
+      "beat": 1,
+      "expected": "G",
+      "heard": "G",
+      "offsetMs": 0
+    },
+    {
+      "bar": 4,
+      "beat": 2,
+      "expected": "G",
+      "heard": "G",
+      "offsetMs": 0
+    },
+    {
+      "bar": 4,
+      "beat": 3,
+      "expected": "G",
+      "heard": "G",
+      "offsetMs": 0
+    },
+    {
+      "bar": 4,
+      "beat": 4,
+      "expected": "G",
+      "heard": "G",
+      "offsetMs": 0
+    },
+    {
+      "bar": 5,
+      "beat": 1,
+      "expected": "C",
+      "heard": "C",
+      "offsetMs": 0
+    },
+    {
+      "bar": 5,
+      "beat": 2,
+      "expected": "C",
+      "heard": "C",
+      "offsetMs": 0
+    },
+    {
+      "bar": 5,
+      "beat": 3,
+      "expected": "C",
+      "heard": "C",
+      "offsetMs": 0
+    },
+    {
+      "bar": 5,
+      "beat": 4,
+      "expected": "C",
+      "heard": "C",
+      "offsetMs": 0
+    },
+    {
+      "bar": 6,
+      "beat": 1,
+      "expected": "G",
+      "heard": "G",
+      "offsetMs": 0
+    },
+    {
+      "bar": 6,
+      "beat": 2,
+      "expected": "G",
+      "heard": "G",
+      "offsetMs": 0
+    },
+    {
+      "bar": 6,
+      "beat": 3,
+      "expected": "G",
+      "heard": "G",
+      "offsetMs": 0
+    },
+    {
+      "bar": 6,
+      "beat": 4,
+      "expected": "G",
+      "heard": "G",
+      "offsetMs": 0
+    },
+    {
+      "bar": 7,
+      "beat": 1,
+      "expected": "C",
+      "heard": "C",
+      "offsetMs": 0
+    },
+    {
+      "bar": 7,
+      "beat": 2,
+      "expected": "C",
+      "heard": "C",
+      "offsetMs": 0
+    },
+    {
+      "bar": 7,
+      "beat": 3,
+      "expected": "C",
+      "heard": "C",
+      "offsetMs": 0
+    },
+    {
+      "bar": 7,
+      "beat": 4,
+      "expected": "C",
+      "heard": "C",
+      "offsetMs": 0
+    },
+    {
+      "bar": 8,
+      "beat": 1,
+      "expected": "G",
+      "heard": "G",
+      "offsetMs": 0
+    },
+    {
+      "bar": 8,
+      "beat": 2,
+      "expected": "G",
+      "heard": "G",
+      "offsetMs": 0
+    },
+    {
+      "bar": 8,
+      "beat": 3,
+      "expected": "G",
+      "heard": "G",
+      "offsetMs": 0
+    },
+    {
+      "bar": 8,
+      "beat": 4,
+      "expected": "G",
+      "heard": "G",
+      "offsetMs": 0
+    }
+  ],
+  "summary": {
+    "expectedStrums": 32,
+    "detectedStrums": 32,
+    "chordAccuracy": 1,
+    "meanAbsOffsetMs": 0,
+    "driftMsPerBar": 0,
+    "changes": {
+      "total": 7,
+      "clean": 7,
+      "late": 0
+    },
+    "topIssue": "none"
+  }
+}

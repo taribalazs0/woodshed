@@ -236,7 +236,7 @@ export interface CoachResponse {
 **Goal:** after every take, you hear one concrete, correct correction.
 
 - [x] **2.1 Models (10 min).** Check the OpenAI docs for the current fast models for transcription, chat with structured outputs, and TTS. Put the defaults into [lib/config.ts](lib/config.ts), with optional environment-variable overrides.
-- [ ] **2.2 Fixtures (10 min).** Create `fixtures/reports/clean.json`, `late-changes.json` and `rushing.json`, reusing the real reports from 1.8 where possible.
+- [x] **2.2 Fixtures (10 min).** Create `fixtures/reports/clean.json`, `late-changes.json` and `rushing.json`, reusing the real reports from 1.8 where possible.
 - [ ] **2.3 Coach route (30 min).** [app/api/coach/route.ts](app/api/coach/route.ts):
   - **System prompt rules:**
     - you are a friendly, direct guitar teacher,
@@ -399,6 +399,7 @@ Record results here as `T<id>, <date>: pass or fail, numbers, notes`.
 - T1a, 2026-10-17: pass. In Chrome, `track.getSettings()` reports `echoCancellation`, `noiseSuppression` and `autoGainControl` as `false`.
 - T1b, T1c, 2026-10-17: pending with a real guitar until Monday or Tuesday. Proxy without a guitar: noise floor RMS 0.0005; a clap reached peak 2.778, max RMS 0.6026, ratio 1274.4x, and the clipping warning appeared. The meter works. A clap is a much peakier signal than a guitar strum, so T1b (peak under 0.95) is not judged from this. T1c's 10x ratio is already exceeded by a large margin against this noise floor.
 - T3, T5, 2026-10-19: pass on synthetic inputs (`npx vitest run tests/report.test.ts`, 6 tests). Onsets on the beat give 0 ms offset; a constant 80 ms latency is removed; a missed window is `missed`; an old chord on a change downbeat is a late change; `topIssue` follows the ranking. Real-guitar T3/T5 stay with step 1.8.
+- Fixtures, 2026-10-19: `fixtures/reports/` holds synthetic C-to-G reports from the report builder (`clean` none, `late-changes` 3 of 7, `rushing` drift about -25 ms/bar). Replace with real takes in step 1.8 when the guitar session happens.
 
 ## Risks and fallbacks
 

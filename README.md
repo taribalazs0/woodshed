@@ -131,6 +131,7 @@ Each model can be overridden in `.env.local`:
 ```bash
 OPENAI_TRANSCRIBE_MODEL=gpt-transcribe
 OPENAI_COACH_MODEL=gpt-5.6-sol
+OPENAI_COACH_REASONING=none
 OPENAI_TTS_MODEL=gpt-4o-mini-tts
 OPENAI_TTS_VOICE=marin
 ```

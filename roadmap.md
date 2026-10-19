@@ -248,7 +248,7 @@ export interface CoachResponse {
   - **Output:** a JSON schema for `{ say, startTake }`.
   - **Server-side validation:** chords must be supported, and BPM is clamped to 40-140.
 - [x] **2.4 Coach smoke test (10 min).** Post each fixture to `/api/coach` with `Invoke-RestMethod`. *Test:* T6.
-- [ ] **2.5 TTS route (10 min).** [app/api/tts/route.ts](app/api/tts/route.ts) turns text into an mp3 response.
+- [x] **2.5 TTS route (10 min).** [app/api/tts/route.ts](app/api/tts/route.ts) turns text into an mp3 response.
 - [ ] **2.6 Client wiring (20 min).** When a take ends, call `/api/coach`, then `/api/tts`, then play the audio, with a status label (Analyzing, Thinking, Speaking). *Test:* T7a.
 - [ ] **2.7 Beat grid (15 min).** [components/BeatGrid.tsx](components/BeatGrid.tsx) shows an 8 x 4 grid:
   - green: right chord, on time,

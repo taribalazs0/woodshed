@@ -5,6 +5,7 @@ import LevelMeter from "@/components/LevelMeter";
 import { scoreChords, type ChordScore } from "@/lib/analysis/chords";
 import { createFeatureStream, type FeatureStream } from "@/lib/analysis/features";
 import { detectOnsets } from "@/lib/analysis/onsets";
+import { buildTakeReport, readingsFromFrames } from "@/lib/analysis/report";
 import { getAudioContext, startAudio } from "@/lib/audio/context";
 import {
   MAX_SLOPPINESS_MS,
@@ -15,7 +16,7 @@ import {
 } from "@/lib/audio/demoGuitar";
 import { scheduleTake, type ScheduledTake } from "@/lib/audio/metronome";
 import { getMicProcessing, openMic, type MicProcessing } from "@/lib/audio/mic";
-import { DEFAULT_EXERCISE, type ChordName } from "@/lib/types";
+import { DEFAULT_EXERCISE, type ChordName, type TakeReport } from "@/lib/types";
 
 interface MicInfo {
   label: string;
@@ -90,6 +91,7 @@ export default function Home() {
   const [lateChangePercent, setLateChangePercent] = useState(0);
   const [guitarPlan, setGuitarPlan] = useState<DemoStrum[] | null>(null);
   const [features, setFeatures] = useState<FeatureSummary | null>(null);
+  const [report, setReport] = useState<TakeReport | null>(null);
   const streamRef = useRef<FeatureStream | null>(null);
   const micSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
 
@@ -177,6 +179,7 @@ export default function Home() {
       expectedStrums,
       chords: null,
     });
+    setReport(null);
     void stream
       .record(source, from, until, (progress) => {
         setFeatures({
@@ -197,6 +200,9 @@ export default function Home() {
         const maxRms = frames.reduce((max, frame) => Math.max(max, frame.rms), 0);
         const onsets = detectOnsets(frames);
         const chords = expected ? describeChordScore(scoreChords(frames, onsets, expected)) : null;
+        setReport(
+          buildTakeReport(DEFAULT_EXERCISE, scheduled.beatTimes, readingsFromFrames(onsets, frames)),
+        );
         setFeatures({
           source: label,
           frames: frames.length,
@@ -378,6 +384,13 @@ export default function Home() {
             ? `${features.recording ? "Recording" : "Recorded"} ${features.source}: ${features.frames} frames, max RMS ${features.maxRms.toFixed(3)}${features.recording ? "" : `, mean RMS ${features.meanRms.toFixed(3)}, onsets ${features.onsets} (expected ${features.expectedStrums})${features.chords ? `, ${features.chords}` : ""}`}`
             : "A take records RMS and chroma. Test take uses the microphone. Play demo guitar uses the synth."}
         </p>
+      </section>
+
+      <section className="flex w-full flex-col gap-2">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Last report</h2>
+        <pre className="max-h-96 overflow-auto rounded-lg bg-zinc-100 p-4 font-mono text-xs text-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
+          {report ? JSON.stringify(report, null, 2) : "No take yet."}
+        </pre>
       </section>
     </main>
   );

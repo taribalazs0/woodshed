@@ -226,7 +226,7 @@ export interface CoachResponse {
 - [x] **1.4 Onset detector (15 min).** [lib/analysis/onsets.ts](lib/analysis/onsets.ts) uses an adaptive threshold on the RMS rise and a 120 ms refractory period. *Test:* T2.
 - [x] **1.5 Chord matcher (15 min).** [lib/analysis/chords.ts](lib/analysis/chords.ts) builds triad templates for the supported chords and matches the 60-250 ms chroma window. *Test:* T4.
 - [x] **1.6 Report builder (25 min).** [lib/analysis/report.ts](lib/analysis/report.ts) maps onsets to beats, removes the median latency, assigns a chord to each beat, finds late changes, and computes the summary and `topIssue`. *Test:* T3, T5.
-- [ ] **1.7 Report view (5 min).** Print the last report as JSON in a `<pre>` block.
+- [x] **1.7 Report view (5 min).** Print the last report as JSON in a `<pre>` block.
 - [ ] **1.8 Real-guitar session (15 min, moved to the first session with the guitar).** Run T2-T5 and write the results into the test log. Save two real reports for the fixtures in step 2.2.
 
 **Exit criteria:** T2-T5 pass, or the fallback from the risk list is in place. Under the change of plan, M1 exits when the demo guitar produces a correct report (T10), and T2-T5 follow with the real guitar. **Budget:** 120 minutes, no buffer.

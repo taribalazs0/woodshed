@@ -247,7 +247,7 @@ export interface CoachResponse {
     - only set `startTake` when the student asked to play or agreed to.
   - **Output:** a JSON schema for `{ say, startTake }`.
   - **Server-side validation:** chords must be supported, and BPM is clamped to 40-140.
-- [ ] **2.4 Coach smoke test (10 min).** Post each fixture to `/api/coach` with `Invoke-RestMethod`. *Test:* T6.
+- [x] **2.4 Coach smoke test (10 min).** Post each fixture to `/api/coach` with `Invoke-RestMethod`. *Test:* T6.
 - [ ] **2.5 TTS route (10 min).** [app/api/tts/route.ts](app/api/tts/route.ts) turns text into an mp3 response.
 - [ ] **2.6 Client wiring (20 min).** When a take ends, call `/api/coach`, then `/api/tts`, then play the audio, with a status label (Analyzing, Thinking, Speaking). *Test:* T7a.
 - [ ] **2.7 Beat grid (15 min).** [components/BeatGrid.tsx](components/BeatGrid.tsx) shows an 8 x 4 grid:
@@ -400,6 +400,7 @@ Record results here as `T<id>, <date>: pass or fail, numbers, notes`.
 - T1b, T1c, 2026-10-17: pending with a real guitar until Monday or Tuesday. Proxy without a guitar: noise floor RMS 0.0005; a clap reached peak 2.778, max RMS 0.6026, ratio 1274.4x, and the clipping warning appeared. The meter works. A clap is a much peakier signal than a guitar strum, so T1b (peak under 0.95) is not judged from this. T1c's 10x ratio is already exceeded by a large margin against this noise floor.
 - T3, T5, 2026-10-19: pass on synthetic inputs (`npx vitest run tests/report.test.ts`, 6 tests). Onsets on the beat give 0 ms offset; a constant 80 ms latency is removed; a missed window is `missed`; an old chord on a change downbeat is a late change; `topIssue` follows the ranking. Real-guitar T3/T5 stay with step 1.8.
 - Fixtures, 2026-10-19: `fixtures/reports/` holds synthetic C-to-G reports from the report builder (`clean` none, `late-changes` 3 of 7, `rushing` drift about -25 ms/bar). Replace with real takes in step 1.8 when the guitar session happens.
+- T6, 2026-10-19: pass on the second run of 3 fixtures x 3, with `userSaid` null so `startTake` stayed null. The first run praised or corrected without citing a number; the prompt now requires one number or bar from the report. Clean cited 7 changes, late-changes cited bars 2, 4 and 6 (sometimes only bar 2), rushing cited bar 8 at 87 ms early, which is the report's offset.
 
 ## Risks and fallbacks
 

@@ -50,6 +50,7 @@ Rules:
 - At most 2 sentences and about 30 words.
 - Exactly one correction, or one praise. Never both.
 - Only use numbers that appear in the report. Do not invent counts, bars, milliseconds, or tempos.
+- Include one concrete number or bar from the report, such as a bar, a change count, an offset in milliseconds, or the tempo.
 - Focus on summary.topIssue. The analysis already chose the issue; do not pick a different one.
 - If twoCleanTakesInARow is true, suggest raising the tempo a little.
 - Set startTake only when the student asked to play or agreed to play. Otherwise startTake is null.

@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
+import BeatGrid from "@/components/BeatGrid";
 import LevelMeter from "@/components/LevelMeter";
 import { scoreChords, type ChordScore } from "@/lib/analysis/chords";
 import { createFeatureStream, type FeatureStream } from "@/lib/analysis/features";
@@ -16,7 +17,13 @@ import {
 } from "@/lib/audio/demoGuitar";
 import { scheduleTake, type ScheduledTake } from "@/lib/audio/metronome";
 import { getMicProcessing, openMic, type MicProcessing } from "@/lib/audio/mic";
-import { DEFAULT_EXERCISE, type ChordName, type TakeReport } from "@/lib/types";
+import {
+  DEFAULT_EXERCISE,
+  type ChordName,
+  type CoachResponse,
+  type TakeReport,
+  type TakeSummary,
+} from "@/lib/types";
 
 interface MicInfo {
   label: string;
@@ -67,6 +74,8 @@ function describeGuitar(plan: DemoStrum[]): string {
   return `${plan.length} strums, late changes on bars ${lateBars.join(", ")}.`;
 }
 
+type CoachPhase = "Analyzing" | "Thinking" | "Speaking";
+
 interface FeatureSummary {
   source: string;
   frames: number;
@@ -92,8 +101,13 @@ export default function Home() {
   const [guitarPlan, setGuitarPlan] = useState<DemoStrum[] | null>(null);
   const [features, setFeatures] = useState<FeatureSummary | null>(null);
   const [report, setReport] = useState<TakeReport | null>(null);
+  const [coachPhase, setCoachPhase] = useState<CoachPhase | null>(null);
+  const [coachSay, setCoachSay] = useState<string | null>(null);
   const streamRef = useRef<FeatureStream | null>(null);
   const micSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const historyRef = useRef<TakeSummary[]>([]);
+  const coachGeneration = useRef(0);
+  const speechRef = useRef<HTMLAudioElement | null>(null);
 
   const started = sampleRate !== null;
   const ready = audioState === "running" && mic !== null;
@@ -166,6 +180,11 @@ export default function Home() {
   ) {
     const stream = streamRef.current;
     if (!stream) throw new Error("Feature stream is not ready. Click Start again.");
+    const generation = coachGeneration.current + 1;
+    coachGeneration.current = generation;
+    speechRef.current?.pause();
+    setCoachPhase(null);
+    setCoachSay(null);
     const from = scheduled.beatTimes[0];
     const until = scheduled.endTime;
     const expectedStrums = scheduled.bars * scheduled.beatsPerBar;
@@ -193,16 +212,22 @@ export default function Home() {
           chords: null,
         });
       })
-      .then((frames) => {
+      .then(async (frames) => {
+        if (coachGeneration.current !== generation) return;
+        const takeEnded = performance.now();
+        setCoachPhase("Analyzing");
         const meanRms = frames.length
           ? frames.reduce((sum, frame) => sum + frame.rms, 0) / frames.length
           : 0;
         const maxRms = frames.reduce((max, frame) => Math.max(max, frame.rms), 0);
         const onsets = detectOnsets(frames);
         const chords = expected ? describeChordScore(scoreChords(frames, onsets, expected)) : null;
-        setReport(
-          buildTakeReport(DEFAULT_EXERCISE, scheduled.beatTimes, readingsFromFrames(onsets, frames)),
+        const nextReport = buildTakeReport(
+          DEFAULT_EXERCISE,
+          scheduled.beatTimes,
+          readingsFromFrames(onsets, frames),
         );
+        setReport(nextReport);
         setFeatures({
           source: label,
           frames: frames.length,
@@ -213,10 +238,69 @@ export default function Home() {
           expectedStrums,
           chords,
         });
+        await speakCoach(nextReport, generation, takeEnded);
       })
       .catch((err: unknown) => {
+        if (coachGeneration.current !== generation) return;
+        setCoachPhase(null);
         setError(err instanceof Error ? err.message : String(err));
       });
+  }
+
+  async function speakCoach(nextReport: TakeReport, generation: number, takeEnded: number) {
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    if (coachGeneration.current !== generation) return;
+    setCoachPhase("Thinking");
+    const coachResponse = await fetch("/api/coach", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        exercise: nextReport.exercise,
+        latestReport: nextReport,
+        history: historyRef.current,
+        userSaid: null,
+      }),
+    });
+    const coachBody = (await coachResponse.json()) as CoachResponse & { error?: string };
+    if (!coachResponse.ok) throw new Error(coachBody.error ?? "The coach request failed.");
+    if (coachGeneration.current !== generation) return;
+
+    historyRef.current = [...historyRef.current, nextReport.summary].slice(-5);
+    setCoachSay(coachBody.say);
+    setCoachPhase("Speaking");
+
+    const speechResponse = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: coachBody.say }),
+    });
+    if (!speechResponse.ok) {
+      const speechBody = (await speechResponse.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(speechBody?.error ?? "The speech request failed.");
+    }
+    if (coachGeneration.current !== generation) return;
+
+    const url = URL.createObjectURL(await speechResponse.blob());
+    const audio = new Audio(url);
+    speechRef.current = audio;
+    audio.addEventListener(
+      "playing",
+      () => {
+        console.info("T7a take end to coach audio", {
+          elapsedMs: Math.round(performance.now() - takeEnded),
+        });
+      },
+      { once: true },
+    );
+    audio.addEventListener(
+      "ended",
+      () => {
+        URL.revokeObjectURL(url);
+        if (coachGeneration.current === generation) setCoachPhase(null);
+      },
+      { once: true },
+    );
+    await audio.play();
   }
 
   async function handleDemoGuitar() {
@@ -385,6 +469,14 @@ export default function Home() {
             : "A take records RMS and chroma. Test take uses the microphone. Play demo guitar uses the synth."}
         </p>
       </section>
+
+      <section className="flex flex-col items-start gap-2">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Coach</h2>
+        <p className="font-mono text-sm">{coachPhase ?? "Idle"}</p>
+        {coachSay && <p className="text-lg">{coachSay}</p>}
+      </section>
+
+      {report && <BeatGrid report={report} />}
 
       <section className="flex w-full flex-col gap-2">
         <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Last report</h2>

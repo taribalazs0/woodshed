@@ -250,7 +250,7 @@ export interface CoachResponse {
 - [x] **2.4 Coach smoke test (10 min).** Post each fixture to `/api/coach` with `Invoke-RestMethod`. *Test:* T6.
 - [x] **2.5 TTS route (10 min).** [app/api/tts/route.ts](app/api/tts/route.ts) turns text into an mp3 response.
 - [ ] **2.6 Client wiring (20 min).** When a take ends, call `/api/coach`, then `/api/tts`, then play the audio, with a status label (Analyzing, Thinking, Speaking). *Test:* T7a.
-- [ ] **2.7 Beat grid (15 min).** [components/BeatGrid.tsx](components/BeatGrid.tsx) shows an 8 x 4 grid:
+- [x] **2.7 Beat grid (15 min).** [components/BeatGrid.tsx](components/BeatGrid.tsx) shows an 8 x 4 grid:
   - green: right chord, on time,
   - yellow: right chord, off time,
   - red: wrong chord, unclear or missed,

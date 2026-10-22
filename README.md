@@ -65,23 +65,22 @@ When you practice guitar, both hands are on the instrument and your eyes are on 
 ### With a guitar
 
 1. Put on headphones and click **Start** once. Browsers only allow audio to start after a user gesture; after this one click, everything is voice.
-2. Say what you want to practice, for example "Let's practice C to G at 70".
-3. Play when the count-in ends. After 8 bars, the coach tells you what to fix.
-4. Talk back to adjust the next take.
+2. **Demo** is on by default. Say "Let's practice." Woodshed plays recorded C and D chords at 40 BPM.
+3. After 8 bars, the coach tells you what to fix.
+4. Talk back: "Again" replays, "Why was that bad?" explains. Turn **Demo** off to play those chords yourself.
 
 ### Without a guitar (Demo mode)
 
-Turn on **Demo mode** to let a synthesized guitar play the exercise into the same analyzer the microphone uses. Two sliders inject mistakes:
+Leave **Demo** on. A recorded guitar plays C and D at 40 BPM into the same analyzer the microphone uses. Two sliders in Session details inject mistakes:
 
 - **Timing sloppiness:** strums land randomly early or late.
 - **Late chord changes:** the guitarist switches to the next chord too late.
 
-You still talk to the coach through your microphone, exactly as you would with a real guitar.
+You still talk to the coach through your microphone. The tempo buttons do not change the demo; it stays at 40 BPM so each recorded chord can finish.
 
 ## Example voice commands
 
-- "Let's practice C to G at 60."
-- "Slower." or "Speed it up a bit."
+- "Let's practice."
 - "Again."
 - "Why was that bad?"
 

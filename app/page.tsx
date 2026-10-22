@@ -112,6 +112,7 @@ export default function Home() {
   const [lines, setLines] = useState<ConversationLine[]>([]);
   const [chords, setChords] = useState<ChordName[]>([...DEFAULT_EXERCISE.chords]);
   const [listening, setListening] = useState(false);
+  const [demo, setDemo] = useState(true);
   const streamRef = useRef<FeatureStream | null>(null);
   const micSourceRef = useRef<AudioNode | null>(null);
   const inputGainRef = useRef<GainNode | null>(null);
@@ -169,7 +170,9 @@ export default function Home() {
       setMic({ label: opened.track.label, processing: getMicProcessing(opened.track), source: gain });
       const generation = coachGeneration.current + 1;
       coachGeneration.current = generation;
-      const greeting = "What do you want to practice? For example, C to G at 60.";
+      const greeting = demo
+        ? "Demo is on. Say let's practice, and I'll play C and D at 40."
+        : "What do you want to practice? For example, C to G at 60.";
       setLines([{ role: "coach", text: greeting }]);
       await playSpeech(greeting, generation);
       if (coachGeneration.current !== generation) return;
@@ -331,7 +334,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          exercise: currentExercise(),
+          exercise: demo ? demoExercise() : currentExercise(),
           latestReport: reportRef.current,
           history: historyRef.current,
           userSaid: text,
@@ -345,6 +348,10 @@ export default function Home() {
       await playSpeech(coachBody.say, generation);
       if (coachGeneration.current !== generation) return;
       if (coachBody.startTake && coachBody.startTake.chords.length > 0) {
+        if (demo) {
+          await runDemoTake();
+          return;
+        }
         setChords(coachBody.startTake.chords);
         setBpm(coachBody.startTake.bpm);
         await runMicTake({
@@ -418,28 +425,32 @@ export default function Home() {
     setTakeNow(getAudioContext().currentTime);
   }
 
+  async function runDemoTake() {
+    const exercise = demoExercise();
+    const scheduled = await scheduleTake(exercise);
+    const plan = planDemoStrums(scheduled, exercise, {
+      sloppinessMs,
+      lateChangeAmount: lateChangePercent / 100,
+    });
+    const guitar = await preloadDemoGuitar();
+    await playDemoGuitar(plan);
+    captureFeatures(
+      guitar.output,
+      "demo guitar",
+      scheduled,
+      exercise,
+      plan.map((strum) => ({ time: strum.time, chord: strum.played })),
+    );
+    setGuitarPlan(plan);
+    setTake(scheduled);
+    setTakeNow(getAudioContext().currentTime);
+  }
+
   async function handleDemoGuitar() {
     setTakeStarting(true);
     setError(null);
     try {
-      const exercise = demoExercise();
-      const scheduled = await scheduleTake(exercise);
-      const plan = planDemoStrums(scheduled, exercise, {
-        sloppinessMs,
-        lateChangeAmount: lateChangePercent / 100,
-      });
-      const guitar = await preloadDemoGuitar();
-      await playDemoGuitar(plan);
-      captureFeatures(
-        guitar.output,
-        "demo guitar",
-        scheduled,
-        exercise,
-        plan.map((strum) => ({ time: strum.time, chord: strum.played })),
-      );
-      setGuitarPlan(plan);
-      setTake(scheduled);
-      setTakeNow(getAudioContext().currentTime);
+      await runDemoTake();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -500,6 +511,15 @@ export default function Home() {
           className="h-12 rounded-full border border-zinc-300 px-6 text-base transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
         >
           {takeStarting ? "Scheduling..." : "Play demo guitar"}
+        </button>
+        <button
+          type="button"
+          aria-pressed={demo}
+          onClick={() => setDemo((on) => !on)}
+          disabled={takeActive}
+          className={`h-12 rounded-full px-6 text-base transition-colors disabled:opacity-50 ${demo ? "bg-emerald-600 text-white" : "border border-zinc-300 dark:border-zinc-700"}`}
+        >
+          {demo ? "Demo on" : "Demo off"}
         </button>
         <div className="flex items-center gap-2">
           <button

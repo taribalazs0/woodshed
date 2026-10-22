@@ -480,68 +480,93 @@ export default function Home() {
     ? coachPhase
     : take
       ? describeTake(take, takeNow)
-    : listening
-      ? "Listening"
-      : ready
-        ? "Ready"
-        : "Click Start once";
+      : listening
+        ? "Listening"
+        : ready
+          ? "Ready"
+          : "Click Start once";
+
+  const nextAction = !ready
+    ? "Click Start, then allow the microphone."
+    : coachPhase === "Speaking"
+      ? "Listen."
+      : coachPhase === "Thinking" || coachPhase === "Analyzing"
+        ? "Wait."
+        : takeActive
+          ? "Play with the click."
+          : listening && report
+            ? "Say: Again.  or  Why was that bad?"
+            : listening
+              ? "Say: Let's practice."
+              : statusLine;
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-12 font-sans">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-4xl font-semibold tracking-tight">Woodshed</h1>
-        <p className="text-lg text-zinc-600 dark:text-zinc-400">
-          Play eight bars. The coach names the one thing to fix.
-        </p>
-      </header>
-
-      <section className="flex flex-wrap items-center gap-4">
-        <button
-          type="button"
-          onClick={handleStart}
-          disabled={starting || ready}
-          className="h-12 rounded-full bg-foreground px-8 text-base font-medium text-background transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-zinc-300"
-        >
-          {ready ? "Running" : starting ? "Starting..." : "Start"}
-        </button>
-        <button
-          type="button"
-          onClick={handleDemoGuitar}
-          disabled={!ready || takeStarting || takeActive}
-          className="h-12 rounded-full border border-zinc-300 px-6 text-base transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
-        >
-          {takeStarting ? "Scheduling..." : "Play demo guitar"}
-        </button>
-        <button
-          type="button"
-          aria-pressed={demo}
-          onClick={() => setDemo((on) => !on)}
-          disabled={takeActive}
-          className={`h-12 rounded-full px-6 text-base transition-colors disabled:opacity-50 ${demo ? "bg-emerald-600 text-white" : "border border-zinc-300 dark:border-zinc-700"}`}
-        >
-          {demo ? "Demo on" : "Demo off"}
-        </button>
-        <div className="flex items-center gap-2">
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-6 pb-16 font-sans">
+      <header className="z-10 -mx-6 mb-2 flex flex-col gap-3 border-b border-zinc-200 bg-background/90 px-6 py-3 backdrop-blur md:sticky md:top-0 dark:border-zinc-800">
+        <div>
+          <h1 className="text-lg font-semibold tracking-tight">Woodshed</h1>
+          <p className="text-sm text-zinc-500">Eight bars. One thing to fix.</p>
+        </div>
+        <nav aria-label="On this page" className="flex flex-wrap gap-4 text-sm text-zinc-500">
+          <a href="#coach" className="hover:text-foreground">
+            Coach
+          </a>
+          <a href="#take" className="hover:text-foreground">
+            Take
+          </a>
+          <a href="#talk" className="hover:text-foreground">
+            Talk
+          </a>
+            <a
+              href="#details"
+              className="hover:text-foreground"
+              onClick={() => {
+                const el = document.getElementById("details");
+                if (el instanceof HTMLDetailsElement) el.open = true;
+              }}
+            >
+              Details
+            </a>
+        </nav>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="rounded-full bg-zinc-100 px-3 py-1 font-mono text-xs text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
+            {statusLine}
+          </p>
           <button
             type="button"
-            onClick={() => changeBpm(-5)}
-            disabled={takeActive}
-            className="h-10 w-10 rounded-full border border-zinc-300 text-sm disabled:opacity-50 dark:border-zinc-700"
+            onClick={handleStart}
+            disabled={starting || ready}
+            className="h-10 rounded-full bg-foreground px-6 text-sm font-medium text-background transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-zinc-300"
           >
-            -5
+            {ready ? "Running" : starting ? "Starting..." : "Start"}
           </button>
-          <span className="w-16 text-center font-mono text-sm">{bpm} BPM</span>
           <button
             type="button"
-            onClick={() => changeBpm(5)}
+            aria-pressed={demo}
+            onClick={() => setDemo((on) => !on)}
             disabled={takeActive}
-            className="h-10 w-10 rounded-full border border-zinc-300 text-sm disabled:opacity-50 dark:border-zinc-700"
+            className={`h-10 rounded-full px-5 text-sm transition-colors disabled:opacity-50 ${demo ? "bg-emerald-600 text-white" : "border border-zinc-300 dark:border-zinc-700"}`}
           >
-            +5
+            {demo ? "Demo on" : "Demo off"}
+          </button>
+          <button
+            type="button"
+            onClick={handleDemoGuitar}
+            disabled={!ready || takeStarting || takeActive}
+            className="h-10 rounded-full border border-zinc-300 px-5 text-sm transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          >
+            {takeStarting ? "Scheduling..." : "Play demo guitar"}
+          </button>
+          <button
+            type="button"
+            onClick={handleTestTake}
+            disabled={!ready || takeStarting || takeActive}
+            className="h-10 rounded-full border border-zinc-300 px-5 text-sm transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          >
+            {takeStarting ? "Scheduling..." : "Test take"}
           </button>
         </div>
-        <p className="font-mono text-sm text-zinc-500">{statusLine}</p>
-      </section>
+      </header>
 
       {error && (
         <p role="alert" className="text-sm text-red-600 dark:text-red-400">
@@ -549,18 +574,60 @@ export default function Home() {
         </p>
       )}
 
-      <section className="flex min-h-24 flex-col gap-2">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Coach</h2>
-        <p className="text-2xl font-medium leading-snug">
-          {coachSay ?? "The coach speaks after the take."}
-        </p>
-      </section>
+      <p className="text-2xl font-semibold tracking-tight sm:text-3xl">{nextAction}</p>
 
-      <ConversationLog lines={lines} />
+      <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(16rem,0.8fr)]">
+        <div className="flex flex-col gap-8">
+          <section id="coach" className="scroll-mt-24 flex min-h-24 flex-col gap-2">
+            <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">Coach</h2>
+            <p className="text-2xl font-medium leading-snug">
+              {coachSay ?? "The coach speaks after the take."}
+            </p>
+            {demo ? (
+              <p className="text-sm text-zinc-500">Demo: C → D at 40 BPM. The tempo buttons do not change this.</p>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => changeBpm(-5)}
+                  disabled={takeActive}
+                  className="h-10 w-10 rounded-full border border-zinc-300 text-sm disabled:opacity-50 dark:border-zinc-700"
+                >
+                  -5
+                </button>
+                <span className="w-16 text-center font-mono text-sm">{bpm} BPM</span>
+                <button
+                  type="button"
+                  onClick={() => changeBpm(5)}
+                  disabled={takeActive}
+                  className="h-10 w-10 rounded-full border border-zinc-300 text-sm disabled:opacity-50 dark:border-zinc-700"
+                >
+                  +5
+                </button>
+              </div>
+            )}
+          </section>
 
-      {report && <BeatGrid report={report} />}
+          {report ? (
+            <BeatGrid report={report} />
+          ) : (
+            <section
+              id="take"
+              className="scroll-mt-24 rounded-2xl border border-dashed border-zinc-300 p-5 text-zinc-500 dark:border-zinc-700"
+            >
+              <h2 className="text-sm font-medium uppercase tracking-wide">Take</h2>
+              <p className="mt-3 text-lg">The eight-bar grid appears after a take.</p>
+            </section>
+          )}
+        </div>
 
-      <details className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+        <ConversationLog lines={lines} />
+      </div>
+
+      <details
+        id="details"
+        className="scroll-mt-24 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
+      >
         <summary className="cursor-pointer text-sm font-medium text-zinc-500">Session details</summary>
         <div className="mt-8 flex flex-col gap-10">
       <section className="flex flex-col items-start gap-4">
@@ -611,14 +678,6 @@ export default function Home() {
         <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500">
           Metronome
         </h2>
-        <button
-          type="button"
-          onClick={handleTestTake}
-          disabled={!ready || takeStarting || takeActive}
-          className="h-9 rounded-full border border-zinc-300 px-4 text-sm transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-900"
-        >
-          {takeStarting ? "Scheduling..." : "Test take"}
-        </button>
         <p className="font-mono text-sm text-zinc-600 dark:text-zinc-400">
           {take
             ? describeTake(take, takeNow)

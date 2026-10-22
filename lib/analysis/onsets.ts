@@ -6,8 +6,12 @@
  */
 export const ONSET_REFRACTORY_SEC = 0.25;
 
-/** Rises below this are silence, even when the adaptive floor is near zero. */
-const MIN_RISE = 0.008;
+/**
+ * Rises below this are silence, even when the adaptive floor is near zero.
+ * At 0.002 with 8x input gain, a headset take produced 139 onsets in 32 beats:
+ * string buzz counted as strums and the beat mapping fell apart.
+ */
+const MIN_RISE = 0.01;
 
 /** An onset must exceed this multiple of the recent median rise. */
 const THRESHOLD_MULTIPLIER = 2.5;

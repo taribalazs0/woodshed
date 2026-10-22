@@ -263,15 +263,15 @@ export interface CoachResponse {
 
 **Goal:** after one click on Start, the whole loop runs by voice. This is the **minimum viable submission**: from here on, there is always something worth submitting.
 
-- [ ] **3.1 Transcription route (15 min).** [app/api/transcribe/route.ts](app/api/transcribe/route.ts) takes `FormData` with a WAV file and returns `{ text }`.
-- [ ] **3.2 VAD wrapper (25 min).** [lib/voice/vad.ts](lib/voice/vad.ts):
+- [x] **3.1 Transcription route (15 min).** [app/api/transcribe/route.ts](app/api/transcribe/route.ts) takes `FormData` with a WAV file and returns `{ text }`.
+- [x] **3.2 VAD wrapper (25 min).** [lib/voice/vad.ts](lib/voice/vad.ts):
   - `MicVAD` with `onSpeechEnd`, which encodes the segment as WAV and sends it to `/api/transcribe`,
   - exposes `pause()` and `resume()`.
   - Gotcha: `vad-web` needs its model, worklet and onnxruntime WASM files served. Point `baseAssetPath` and `onnxWASMBasePath` at the jsDelivr CDN. If that fails, copy the files into `public/`.
-- [ ] **3.3 Transcript filter (5 min).** Drop empty and one-character results, and the typical noise hallucinations ("Thank you.", "you").
+- [x] **3.3 Transcript filter (5 min).** Drop empty and one-character results, and the typical noise hallucinations ("Thank you.", "you").
 - [ ] **3.4 State machine (35 min).** [lib/session/useSession.ts](lib/session/useSession.ts) implements the diagram above. The VAD only runs in `Listening`, and `startTake` from the coach starts the count-in.
-- [ ] **3.5 Greeting (5 min).** After Start, the coach greets you and asks what to practice.
-- [ ] **3.6 Conversation log (10 min).** [components/ConversationLog.tsx](components/ConversationLog.tsx) shows every transcript and coach reply.
+- [x] **3.5 Greeting (5 min).** After Start, the coach greets you and asks what to practice.
+- [x] **3.6 Conversation log (10 min).** [components/ConversationLog.tsx](components/ConversationLog.tsx) shows every transcript and coach reply.
 - [ ] **3.7 Full-loop session (25 min).** Run T7b, T8 and T9.
 
 **Exit criteria:** T8 and T9 pass, and three takes in a row work without touching the keyboard or mouse after Start. Tag the commit `mvs`. **If this isn't done by the end of Tuesday,** Wednesday goes to finishing the loop, and demo mode moves down the [cut list](#cut-list). **Budget:** 120 minutes.
@@ -397,7 +397,7 @@ Record results here as `T<id>, <date>: pass or fail, numbers, notes`.
 
 - T0, 2026-10-16: pass. `git check-ignore .env.local` prints the path, `git check-ignore .env.example` prints nothing.
 - T1a, 2026-10-17: pass. In Chrome, `track.getSettings()` reports `echoCancellation`, `noiseSuppression` and `autoGainControl` as `false`.
-- T1b, T1c, 2026-10-17: pending with a real guitar until Monday or Tuesday. Proxy without a guitar: noise floor RMS 0.0005; a clap reached peak 2.778, max RMS 0.6026, ratio 1274.4x, and the clipping warning appeared. The meter works. A clap is a much peakier signal than a guitar strum, so T1b (peak under 0.95) is not judged from this. T1c's 10x ratio is already exceeded by a large margin against this noise floor.
+- T1b, T1c, 2026-10-20: pass on the laptop Realtek mic, but the guitar is very quiet. Noise floor RMS 0.0003, hard-strum max peak 0.031, max RMS 0.0113, ratio 42.1x, no clipping warning. An 8-bar C-to-G take then detected 0 of 32 strums, so the mic was too far from the guitar during playing. Move it 20-30 cm from the neck joint and retry before judging T2-T5.
 - T3, T5, 2026-10-19: pass on synthetic inputs (`npx vitest run tests/report.test.ts`, 6 tests). Onsets on the beat give 0 ms offset; a constant 80 ms latency is removed; a missed window is `missed`; an old chord on a change downbeat is a late change; `topIssue` follows the ranking. Real-guitar T3/T5 stay with step 1.8.
 - Fixtures, 2026-10-19: `fixtures/reports/` holds synthetic C-to-G reports from the report builder (`clean` none, `late-changes` 3 of 7, `rushing` drift about -25 ms/bar). Replace with real takes in step 1.8 when the guitar session happens.
 - T6, 2026-10-19: pass on the second run of 3 fixtures x 3, with `userSaid` null so `startTake` stayed null. The first run praised or corrected without citing a number; the prompt now requires one number or bar from the report. Clean cited 7 changes, late-changes cited bars 2, 4 and 6 (sometimes only bar 2), rushing cited bar 8 at 87 ms early, which is the report's offset.

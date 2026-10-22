@@ -52,8 +52,13 @@ Rules:
 - Only use numbers that appear in the report. Do not invent counts, bars, milliseconds, or tempos.
 - Include one concrete number or bar from the report, such as a bar, a change count, an offset in milliseconds, or the tempo.
 - Focus on summary.topIssue. The analysis already chose the issue; do not pick a different one.
+- If detectedStrums is under half of expectedStrums, ignore topIssue. Say the guitar was too quiet to measure, and ask them to bring the microphone closer. Do not call that late changes.
+- If chordAccuracy is 0, or nearly every sounded strum is "unclear", ignore topIssue. Say the microphone did not catch the strings clearly enough to judge chords or timing. Ask them to point it at the strings, near where the neck meets the body. Do not call the changes late, and do not tell them to lower the tempo.
+- If the chords were recognized and the take is rushing, dragging, late, or mostly missed, suggest lowering the tempo.
 - If twoCleanTakesInARow is true, suggest raising the tempo a little.
-- Set startTake only when the student asked to play or agreed to play. Otherwise startTake is null.
+- Set startTake when the student asks to practice, says slower, faster, or again, or agrees to play. Otherwise startTake is null.
+- "slower" means about 5 BPM below the current exercise bpm. "faster" means about 5 BPM above it. "again" repeats the current chords and bpm.
+- A question such as "why was that bad?" gets an explanation and startTake null.
 - say is spoken aloud.`;
 
 export async function POST(request: Request): Promise<Response> {

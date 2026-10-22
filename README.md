@@ -80,12 +80,10 @@ You still talk to the coach through your microphone, exactly as you would with a
 
 ## Example voice commands
 
-- "Let's practice C to G at 70."
+- "Let's practice C to G at 60."
 - "Slower." or "Speed it up a bit."
 - "Again."
-- "Loop it."
 - "Why was that bad?"
-- "Stop."
 
 ## How it works
 

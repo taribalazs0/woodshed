@@ -1,10 +1,12 @@
 import { getAudioContext } from "@/lib/audio/context";
 import type { ScheduledTake } from "@/lib/audio/metronome";
 import type { ChordName, Exercise } from "@/lib/types";
-import type { PluckSynth } from "tone";
 
-/** Delay between adjacent sounding strings of one down-strum. */
-export const STRUM_SPREAD_SEC = 0.012;
+/** The recorded chords need a whole beat to finish. The screen tempo does not apply here. */
+export const DEMO_BPM = 40;
+
+/** Leave a short gap so the next strum's attack is still audible. */
+const BEAT_GAP_SEC = 0.05;
 
 /**
  * Largest random early/late offset. Half a beat at 140 BPM is about 214 ms,
@@ -12,20 +14,12 @@ export const STRUM_SPREAD_SEC = 0.012;
  */
 export const MAX_SLOPPINESS_MS = 120;
 
-/**
- * Open-position voicings, low E to high E. Null is a muted string.
- * The first sounding string is placed on the beat; the rest follow by STRUM_SPREAD_SEC.
- */
-const VOICINGS: Record<ChordName, (string | null)[]> = {
-  C: [null, "C3", "E3", "G3", "C4", "E4"],
-  G: ["G2", "B2", "D3", "G3", "B3", "G4"],
-  D: [null, null, "D3", "A3", "D4", "F#4"],
-  E: ["E2", "B2", "E3", "G#3", "B3", "E4"],
-  A: [null, "A2", "E3", "A3", "C#4", "E4"],
-  Am: [null, "A2", "E3", "A3", "C4", "E4"],
-  Dm: [null, null, "D3", "A3", "D4", "F4"],
-  Em: ["E2", "B2", "E3", "G3", "B3", "E4"],
-};
+const SAMPLE_URLS = {
+  C: "/chords/C.mp3",
+  D: "/chords/D.mp3",
+} as const;
+
+export type SampleChord = keyof typeof SAMPLE_URLS;
 
 export interface DemoGuitarOptions {
   /** 0 to MAX_SLOPPINESS_MS. Each strum is shifted randomly early or late by up to this much. */
@@ -35,7 +29,7 @@ export interface DemoGuitarOptions {
 }
 
 export interface DemoStrum {
-  /** AudioContext time of the first sounding string. */
+  /** AudioContext time of the sample start. */
   time: number;
   bar: number;
   beat: number;
@@ -46,27 +40,23 @@ export interface DemoStrum {
 }
 
 export interface DemoGuitar {
-  /** Guitar only. Connected to the speakers. The analyzer will read this instead of the mic. */
+  /** Guitar only. Connected to the speakers. The analyzer reads this instead of the mic. */
   output: GainNode;
 }
 
-interface StringVoice {
-  triggerAttack(note: string, time?: number): void;
-}
+let guitarPromise: Promise<DemoGuitar & { buffers: Record<SampleChord, AudioBuffer> }> | null = null;
 
-let guitarPromise: Promise<DemoGuitar & { strings: StringVoice[] }> | null = null;
-
-/** Creates the six string voices once, on the shared AudioContext. */
+/** Loads the recorded chords once, on the shared AudioContext. */
 export function getDemoGuitar(): Promise<DemoGuitar> {
   return loadDemoGuitar();
 }
 
-/** Builds the guitar before Meyda starts, so the first take is not silent. */
+/** Decodes the samples before the first take, so the first strum is not silent. */
 export function preloadDemoGuitar(): Promise<DemoGuitar> {
   return loadDemoGuitar();
 }
 
-function loadDemoGuitar(): Promise<DemoGuitar & { strings: StringVoice[] }> {
+function loadDemoGuitar(): Promise<DemoGuitar & { buffers: Record<SampleChord, AudioBuffer> }> {
   guitarPromise ??= createDemoGuitar().catch((err: unknown) => {
     guitarPromise = null;
     throw err;
@@ -76,7 +66,7 @@ function loadDemoGuitar(): Promise<DemoGuitar & { strings: StringVoice[] }> {
 
 /**
  * Decides what the demo guitar will play. At sloppiness 0 and lateChangeAmount 0,
- * every first-sounding string is exactly on its click and every chord matches the exercise.
+ * every sample starts exactly on its click and every chord matches the exercise.
  */
 export function planDemoStrums(
   take: ScheduledTake,
@@ -105,54 +95,42 @@ export function planDemoStrums(
   });
 }
 
-/** Schedules a down-strum per take beat. Clicks stay on the metronome, not on this bus. */
+/** Plays one recorded chord per take beat, late or early by the plan. */
 export async function playDemoGuitar(plan: DemoStrum[]): Promise<void> {
   const guitar = await loadDemoGuitar();
+  const ctx = getAudioContext();
   for (const strum of plan) {
-    const notes = VOICINGS[strum.played];
-    let sounding = 0;
-    notes.forEach((note, stringIndex) => {
-      if (!note) return;
-      guitar.strings[stringIndex].triggerAttack(
-        note,
-        strum.time + sounding * STRUM_SPREAD_SEC,
-      );
-      sounding += 1;
-    });
+    const buffer = bufferFor(guitar.buffers, strum.played);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(guitar.output);
+    const beatSec = 60 / DEMO_BPM - BEAT_GAP_SEC;
+    source.start(strum.time, 0, Math.min(beatSec, buffer.duration));
   }
 }
 
-/**
- * PluckSynth stays silent until its AudioWorklet string model has connected.
- * That load is async, so notes scheduled before it are dropped.
- */
-async function whenStringModelsReady(strings: PluckSynth[]): Promise<void> {
-  const toneContext = strings[0]?.context as { _workletPromise?: Promise<unknown> } | undefined;
-  const failed = toneContext?._workletPromise?.then(
-    () => null,
-    (err: unknown) => (err instanceof Error ? err.message : String(err)),
-  );
-  const deadline = performance.now() + 2000;
-  while (performance.now() < deadline) {
-    if (strings.every((string) => stringModelReady(string))) return;
-    const reason = await Promise.race([
-      failed ?? Promise.resolve(null),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 40)),
-    ]);
-    if (typeof reason === "string") {
-      throw new Error(`Demo guitar string model failed to load: ${reason}`);
-    }
-  }
-  throw new Error(
-    "Demo guitar could not start its string model. Reload the page and press Start again.",
-  );
+async function createDemoGuitar(): Promise<DemoGuitar & { buffers: Record<SampleChord, AudioBuffer> }> {
+  const ctx = getAudioContext();
+  const output = ctx.createGain();
+  output.gain.value = 0.9;
+  output.connect(ctx.destination);
+  const [c, d] = await Promise.all([
+    loadSample(ctx, SAMPLE_URLS.C),
+    loadSample(ctx, SAMPLE_URLS.D),
+  ]);
+  return { output, buffers: { C: c, D: d } };
 }
 
-function stringModelReady(string: PluckSynth): boolean {
-  const comb = (string as unknown as {
-    _lfcf?: { _combFilter?: { _worklet?: unknown } };
-  })._lfcf?._combFilter;
-  return Boolean(comb?._worklet);
+async function loadSample(ctx: AudioContext, url: string): Promise<AudioBuffer> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Could not load ${url}.`);
+  const encoded = await response.arrayBuffer();
+  return ctx.decodeAudioData(encoded);
+}
+
+function bufferFor(buffers: Record<SampleChord, AudioBuffer>, chord: ChordName): AudioBuffer {
+  if (chord === "C" || chord === "D") return buffers[chord];
+  throw new Error(`The demo guitar only has recordings for C and D, not ${chord}.`);
 }
 
 function chordAtBar(exercise: Exercise, bar: number): ChordName {
@@ -178,90 +156,4 @@ function lateChangeBeatIndexes(
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
-}
-
-async function createDemoGuitar(): Promise<DemoGuitar & { strings: StringVoice[] }> {
-  const ctx = getAudioContext();
-  const Tone = await import("tone");
-  const toneContext = Tone.getContext() as unknown as {
-    rawContext: AudioContext;
-    _workletPromise?: Promise<void>;
-  };
-  if (toneContext.rawContext !== ctx) {
-    throw new Error("Tone.js is not using the shared AudioContext.");
-  }
-
-  const output = ctx.createGain();
-  output.gain.value = 1;
-  output.connect(ctx.destination);
-
-  const plucked = await tryPluckStrings(Tone, toneContext, ctx, output);
-  return { output, strings: plucked ?? createOscillatorStrings(Tone, output) };
-}
-
-async function tryPluckStrings(
-  Tone: typeof import("tone"),
-  toneContext: { _workletPromise?: Promise<void> },
-  ctx: AudioContext,
-  output: GainNode,
-): Promise<PluckSynth[] | null> {
-  let strings: PluckSynth[] = [];
-  try {
-    toneContext._workletPromise ??= withTimeout(
-      ctx.audioWorklet.addModule("/guitar-worklet.js"),
-      1500,
-      "Guitar worklet did not load.",
-    );
-    await toneContext._workletPromise;
-    strings = Array.from({ length: 6 }, () => {
-      const string = new Tone.PluckSynth({
-        attackNoise: 3,
-        dampening: 5000,
-        resonance: 0.92,
-        volume: -4,
-      });
-      string.connect(output);
-      return string;
-    });
-    await whenStringModelsReady(strings);
-    return strings;
-  } catch {
-    strings.forEach((string) => string.dispose());
-    return null;
-  }
-}
-
-function createOscillatorStrings(
-  Tone: typeof import("tone"),
-  output: GainNode,
-): StringVoice[] {
-  return Array.from({ length: 6 }, () => {
-    const string = new Tone.Synth({
-      oscillator: { type: "triangle" },
-      envelope: { attack: 0.001, decay: 0.45, sustain: 0, release: 0.2 },
-      volume: -8,
-    });
-    string.connect(output);
-    return {
-      triggerAttack(note, time) {
-        string.triggerAttackRelease(note, 0.35, time);
-      },
-    };
-  });
-}
-
-function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(message)), ms);
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (err: unknown) => {
-        clearTimeout(timer);
-        reject(err);
-      },
-    );
-  });
 }

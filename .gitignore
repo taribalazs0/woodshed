@@ -40,3 +40,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# LaTeX write-up build
+writeup.aux
+writeup.log
+writeup.out
+writeup.synctex.gz

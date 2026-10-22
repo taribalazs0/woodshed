@@ -1,0 +1,40 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[margin=0.72in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage[hidelinks]{hyperref}
+
+\titleformat{\section}{\normalsize\bfseries\raggedright}{}{0em}{}
+\titlespacing*{\section}{0pt}{0.85em}{0.28em}
+\pagestyle{empty}
+
+\begin{document}
+
+{\LARGE\bfseries Woodshed}\\[0.2em]
+{\large A voice-first guitar practice coach}\\[0.35em]
+{\small Bal\'azs Tari \textperiodcentered\ Hiya Voice AI Challenge, Real-Time Assistance \textperiodcentered\ 22 October 2026}
+
+\section{What I built}
+Woodshed is a browser app that runs a short guitar lesson out loud. After one click on Start, both hands stay on the instrument: you say what to practice, a metronome counts you in, you play eight bars, and a spoken coach names the one thing to fix. Timing and chord identity are measured in the browser. A language model never hears the playing; it only reads a take report and answers through text-to-speech. Demo mode plays recorded C and D chords at 40~BPM, so a reviewer without a guitar can still talk through the same loop.
+
+\section{Who it is for}
+Beginner and early-intermediate guitarists who practice alone and need a teacher-like correction, not a score. It is also built for a judge on desktop Chrome: headphones, one microphone permission, and voice commands such as ``Let's practice'', ``Again'', and ``Why was that bad?''.
+
+\section{The problem}
+Most people who pick up a guitar practice without anyone in the room. Existing apps that listen tend to flash a percentage or a waveform. That pulls your eyes off the fretboard and a hand off the neck---the opposite of a lesson, where a teacher counts you in, listens, and tells you what to change. Late chord changes and rushing go unnoticed. Beginners quit because they cannot hear the mistake they are repeating.
+
+\section{Why voice}
+Both hands are on the guitar and the eyes are on the fretboard. Reaching for a slider to slow down or repeat a section breaks the flow you are trying to build. Music has always been taught out loud. After Start, Woodshed keeps the whole loop in voice: the count-in, the correction, and the next take. You do not tap through menus between bars.
+
+\section{How it works}
+A take is half-duplex: you play, then you talk. During the eight bars the app does not listen for commands, so strumming cannot be mistaken for speech. In the browser, onset detection timestamps each strum against the metronome, and chroma matching decides which chord rang. The result is a small JSON report, including which bars changed late. Silero VAD, also local, gates speech to OpenAI transcription. The coach (\texttt{gpt-5.6-sol}, reasoning off) receives the report, the last few takes, and what you said, and returns one spoken sentence plus whether to start another take. Playing audio never leaves the machine. The DSP measures; the LLM teaches.
+
+\section{What I would do next}
+With more time I would listen during a take so you could say ``stop'', and give a short spoken cue on a late change without waiting for bar eight. I would add muted-string detection, memory across sessions, and a spaced-repetition plan so tomorrow's exercise follows today's mistakes. Chord recognition on a quiet headset microphone is still weaker than timing; a guitar-facing mic and a few more chord templates would make real-guitar coaching as reliable as demo mode. The same loop could cover other strumming patterns and, later, other instruments.
+
+\end{document}
